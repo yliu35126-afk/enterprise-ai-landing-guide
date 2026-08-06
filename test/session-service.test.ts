@@ -90,6 +90,17 @@ describe('ExternalLandingSessionService', () => {
     assert.equal(result.canGenerateMap, true);
   });
 
+  it('用户要求直接生成时不在说明文字中残留追问', async () => {
+    const created = create();
+    const result = await service.addMessage(created.sessionId, created.sessionToken, {
+      mode: 'KNOWN_PROBLEM',
+      message: '已有足够信息，请直接生成初版地图。',
+    }, 'message-direct-map');
+    assert.equal(result.nextQuestion, null);
+    assert.equal(result.assistantMessage.includes('？'), false);
+    assert.match(result.assistantMessage, /停止追问/);
+  });
+
   it('重复消息幂等返回同一响应且不增加消息数', async () => {
     const created = create();
     const input = { mode: 'KNOWN_PROBLEM', message: '报价很慢' };

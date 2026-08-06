@@ -132,7 +132,8 @@ export class ExternalLandingSessionService {
     }
 
     const directGenerate = /直接生成|先生成|生成初版|不再回答/.test(message);
-    const nextQuestion = directGenerate || questionCount >= 5 ? null : oneQuestion(turn.nextQuestion);
+    const questionLimitReached = questionCount >= 5;
+    const nextQuestion = directGenerate || questionLimitReached ? null : oneQuestion(turn.nextQuestion);
     // 用户亲自提交的当轮原话是用户陈述事实；不应因为模型漏抽取而丢失。
     const extractedFacts = unique([
       ...confirmedFacts,
@@ -152,9 +153,13 @@ export class ExternalLandingSessionService {
       askedFields: unique([...(Array.isArray(state.askedFields) ? state.askedFields : []), ...Object.keys(updates)]),
     };
     const assistantMessage = sanitizeText(
-      nextQuestion
-        ? `${turn.assistantMessage.replace(/[？?]\s*$/, '').trim()}\n\n${nextQuestion}`
-        : (turn.assistantMessage || '信息已经足够生成一版企业AI落地地图。'),
+      directGenerate
+        ? '已按您当前提供的信息停止追问，可以生成一版初步地图；未确认项会明确标注。'
+        : questionLimitReached
+          ? '已达到本次核心问题上限，可以先生成初步地图；未确认项会明确标注。'
+          : nextQuestion
+            ? `${turn.assistantMessage.replace(/[？?]\s*$/, '').trim()}\n\n${nextQuestion}`
+            : (turn.assistantMessage || '信息已经足够生成一版企业AI落地地图。'),
       3000,
     );
     const now = new Date().toISOString();
