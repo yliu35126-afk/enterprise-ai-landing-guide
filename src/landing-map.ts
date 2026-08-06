@@ -104,17 +104,17 @@ export function enforceEvidencePolicy(map: LandingMap) {
     ...(map.factStatus?.confirmedFacts || []),
     ...(map.factStatus?.fileEvidence || []),
   ]);
-  const supportedNumbers = new Set(numericTokens(confirmed));
+  const supportedNumbers = new Set(numericEvidenceTokens(confirmed));
   for (const scenario of map.candidateScenarios || []) {
     const loss = String(scenario.currentLoss || '').trim();
     if (!loss) scenario.currentLoss = '待确认';
-    const lossNumbers = numericTokens(loss);
+    const lossNumbers = numericEvidenceTokens(loss);
     if (lossNumbers.some((token) => !supportedNumbers.has(token))) scenario.currentLoss = '待确认';
   }
   const proposedThresholds: string[] = [];
   for (const field of ['day7Result', 'day30Metrics', 'stopConditions'] as const) {
     map.validationPlan[field] = (map.validationPlan[field] || []).map((claim: string) => {
-      const unsupported = numericTokens(claim).filter((token) => !supportedNumbers.has(token));
+      const unsupported = numericEvidenceTokens(claim).filter((token) => !supportedNumbers.has(token) && !SYSTEM_VALIDATION_PERIODS.has(token));
       if (!unsupported.length || /待确认|建议目标/.test(claim)) return claim;
       const suffix = '（建议目标，待确认）';
       const labelled = `${claim.slice(0, Math.max(0, 300 - suffix.length))}${suffix}`;
@@ -131,8 +131,23 @@ export function enforceEvidencePolicy(map: LandingMap) {
   return map;
 }
 
-function numericTokens(value: string) {
-  return String(value || '').match(/\d+(?:\.\d+)?/g) || [];
+const SYSTEM_VALIDATION_PERIODS = new Set(['7|天', '30|天']);
+
+function numericEvidenceTokens(value: string) {
+  const tokens: string[] = [];
+  const pattern = /([￥¥$])?\s*(\d+(?:\.\d+)?)\s*(万|千|百)?\s*(元|块|%|％|小时|分钟|天|次|人|份|个|条|张|项|家|月|年)?/g;
+  for (const match of String(value || '').matchAll(pattern)) {
+    const number = match[2];
+    const multiplier = match[3] || '';
+    let unit = match[4] || '';
+    if (unit === '块') unit = '元';
+    if (unit === '％') unit = '%';
+    if (match[1] && !unit) unit = '元';
+    if (match[1] && unit === '元') unit = `${multiplier}元`;
+    else if (multiplier) unit = `${multiplier}${unit}`;
+    tokens.push(`${number}|${unit || 'PLAIN'}`);
+  }
+  return tokens;
 }
 
 export function landingMapMarkdown(map: LandingMap) {
