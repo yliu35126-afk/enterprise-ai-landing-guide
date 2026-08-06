@@ -11,6 +11,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
+    "build:distribution": "node scripts/build-distribution.mjs",
     "test": "NODE_ENV=test EXTERNAL_DATA_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= FDE_ENTERPRISE_ID=tenant-test node --import tsx --test --test-concurrency=1 test/**/*.test.ts",
     "test:coverage": "NODE_ENV=test EXTERNAL_DATA_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= FDE_ENTERPRISE_ID=tenant-test node --experimental-test-coverage --import tsx --test --test-concurrency=1 test/**/*.test.ts"
   },
