@@ -1,0 +1,35 @@
+identity:
+  author: blueprint-fde
+  name: enterprise-ai-landing-guide
+  label:
+    en_US: Enterprise AI Landing Guide
+    zh_Hans: 企业AI落地导航
+  description:
+    en_US: A controlled adapter to the unified Enterprise AI Landing Guide API.
+    zh_Hans: 调用统一企业AI落地导航API的受控适配器。
+  icon: icon.svg
+credentials_schema:
+  - name: api_base
+    type: text-input
+    required: true
+    label:
+      en_US: Public API base URL
+      zh_Hans: 公开API根地址
+    placeholder:
+      en_US: https://ai.example.com
+      zh_Hans: https://ai.example.com
+    help:
+      en_US: HTTPS root URL only. Do not enter an FDE key or AI provider key.
+      zh_Hans: 只填HTTPS根地址，不要填FDE密钥或AI供应商密钥。
+    url: https://example.com/legal/clawhive/privacy
+tools:
+  - tools/create_ai_landing_session.yaml
+  - tools/answer_ai_landing_question.yaml
+  - tools/upload_ai_landing_attachment.yaml
+  - tools/generate_ai_landing_map.yaml
+  - tools/get_ai_landing_map.yaml
+  - tools/request_fde_human_review.yaml
+  - tools/delete_ai_landing_session.yaml
+extra:
+  python:
+    source: provider/enterprise-ai-landing-guide.py

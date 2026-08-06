@@ -1,0 +1,114 @@
+identity:
+  name: request_fde_human_review
+  author: blueprint-fde
+  label:
+    en_US: Request Fde Human Review
+    zh_Hans: 申请FDE人工复核
+description:
+  human:
+    en_US: 用户已获得地图且明确同意保存后才可调用；联系授权单独处理。
+    zh_Hans: 用户已获得地图且明确同意保存后才可调用；联系授权单独处理。
+  llm: 用户已获得地图且明确同意保存后才可调用；联系授权单独处理。
+parameters:
+  - name: session_id
+    type: string
+    required: true
+    label:
+      en_US: 匿名会话ID
+      zh_Hans: 匿名会话ID
+    human_description:
+      en_US: 使用创建会话工具返回的sessionId
+      zh_Hans: 使用创建会话工具返回的sessionId
+    llm_description: 使用创建会话工具返回的sessionId
+    form: llm
+  - name: session_token
+    type: string
+    required: true
+    label:
+      en_US: 短期会话Token
+      zh_Hans: 短期会话Token
+    human_description:
+      en_US: 仅使用创建会话返回的sessionToken，不写入日志
+      zh_Hans: 仅使用创建会话返回的sessionToken，不写入日志
+    llm_description: 仅使用创建会话返回的sessionToken，不写入日志
+    form: llm
+  - name: consent_to_store
+    type: boolean
+    required: true
+    label:
+      en_US: 同意保存
+      zh_Hans: 同意保存
+    human_description:
+      en_US: 只有用户明确同意时为true
+      zh_Hans: 只有用户明确同意时为true
+    llm_description: 只有用户明确同意时为true
+    form: llm
+  - name: consent_to_contact
+    type: boolean
+    required: true
+    label:
+      en_US: 同意联系
+      zh_Hans: 同意联系
+    human_description:
+      en_US: 独立授权；默认false
+      zh_Hans: 独立授权；默认false
+    llm_description: 独立授权；默认false
+    form: llm
+  - name: company_name
+    type: string
+    required: true
+    label:
+      en_US: 企业名称
+      zh_Hans: 企业名称
+    human_description:
+      en_US: 用户授权后亲自提供
+      zh_Hans: 用户授权后亲自提供
+    llm_description: 用户授权后亲自提供
+    form: llm
+  - name: contact_name
+    type: string
+    required: false
+    label:
+      en_US: 联系人
+      zh_Hans: 联系人
+    human_description:
+      en_US: 仅同意联系时传入
+      zh_Hans: 仅同意联系时传入
+    llm_description: 仅同意联系时传入
+    form: llm
+  - name: mobile
+    type: string
+    required: false
+    label:
+      en_US: 手机
+      zh_Hans: 手机
+    human_description:
+      en_US: 仅同意联系时传入
+      zh_Hans: 仅同意联系时传入
+    llm_description: 仅同意联系时传入
+    form: llm
+  - name: email
+    type: string
+    required: false
+    label:
+      en_US: 邮箱
+      zh_Hans: 邮箱
+    human_description:
+      en_US: 仅同意联系时传入
+      zh_Hans: 仅同意联系时传入
+    llm_description: 仅同意联系时传入
+    form: llm
+  - name: idempotency_key
+    type: string
+    required: false
+    label:
+      en_US: 幂等键
+      zh_Hans: 幂等键
+    human_description:
+      en_US: 同一请求重试时复用；新操作使用新键
+      zh_Hans: 同一请求重试时复用；新操作使用新键
+    llm_description: 同一请求重试时复用；新操作使用新键
+    form: llm
+extra:
+  python:
+    source: tools/request_fde_human_review.py

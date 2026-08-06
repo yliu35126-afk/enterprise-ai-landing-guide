@@ -1,0 +1,37 @@
+identity:
+  name: delete_ai_landing_session
+  author: blueprint-fde
+  label:
+    en_US: Delete Ai Landing Session
+    zh_Hans: 删除匿名会话
+description:
+  human:
+    en_US: 删除匿名会话和临时资料；已授权FDE正式业务数据按FDE规则保留。
+    zh_Hans: 删除匿名会话和临时资料；已授权FDE正式业务数据按FDE规则保留。
+  llm: 删除匿名会话和临时资料；已授权FDE正式业务数据按FDE规则保留。
+parameters:
+  - name: session_id
+    type: string
+    required: true
+    label:
+      en_US: 匿名会话ID
+      zh_Hans: 匿名会话ID
+    human_description:
+      en_US: 使用创建会话工具返回的sessionId
+      zh_Hans: 使用创建会话工具返回的sessionId
+    llm_description: 使用创建会话工具返回的sessionId
+    form: llm
+  - name: session_token
+    type: string
+    required: true
+    label:
+      en_US: 短期会话Token
+      zh_Hans: 短期会话Token
+    human_description:
+      en_US: 仅使用创建会话返回的sessionToken，不写入日志
+      zh_Hans: 仅使用创建会话返回的sessionToken，不写入日志
+    llm_description: 仅使用创建会话返回的sessionToken，不写入日志
+    form: llm
+extra:
+  python:
+    source: tools/delete_ai_landing_session.py

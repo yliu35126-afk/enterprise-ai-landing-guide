@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "enterprise-ai-landing-guide": {
+      "type": "http",
+      "url": "https://mcp.example.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${MCP_ACCESS_TOKEN}"
+      }
+    }
+  }
+}

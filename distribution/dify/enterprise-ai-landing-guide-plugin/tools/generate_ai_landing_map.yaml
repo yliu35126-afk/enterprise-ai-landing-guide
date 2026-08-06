@@ -1,0 +1,48 @@
+identity:
+  name: generate_ai_landing_map
+  author: blueprint-fde
+  label:
+    en_US: Generate Ai Landing Map
+    zh_Hans: 生成企业AI落地地图
+description:
+  human:
+    en_US: 根据已确认事实生成JSON与Markdown地图。
+    zh_Hans: 根据已确认事实生成JSON与Markdown地图。
+  llm: 根据已确认事实生成JSON与Markdown地图。
+parameters:
+  - name: session_id
+    type: string
+    required: true
+    label:
+      en_US: 匿名会话ID
+      zh_Hans: 匿名会话ID
+    human_description:
+      en_US: 使用创建会话工具返回的sessionId
+      zh_Hans: 使用创建会话工具返回的sessionId
+    llm_description: 使用创建会话工具返回的sessionId
+    form: llm
+  - name: session_token
+    type: string
+    required: true
+    label:
+      en_US: 短期会话Token
+      zh_Hans: 短期会话Token
+    human_description:
+      en_US: 仅使用创建会话返回的sessionToken，不写入日志
+      zh_Hans: 仅使用创建会话返回的sessionToken，不写入日志
+    llm_description: 仅使用创建会话返回的sessionToken，不写入日志
+    form: llm
+  - name: idempotency_key
+    type: string
+    required: false
+    label:
+      en_US: 幂等键
+      zh_Hans: 幂等键
+    human_description:
+      en_US: 同一请求重试时复用；新操作使用新键
+      zh_Hans: 同一请求重试时复用；新操作使用新键
+    llm_description: 同一请求重试时复用；新操作使用新键
+    form: llm
+extra:
+  python:
+    source: tools/generate_ai_landing_map.py
