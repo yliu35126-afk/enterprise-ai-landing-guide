@@ -5,7 +5,7 @@
   "description": "独立运行的企业AI落地导航匿名会话与多平台适配核心服务",
   "type": "module",
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=22.13.0"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

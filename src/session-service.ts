@@ -133,9 +133,17 @@ export class ExternalLandingSessionService {
 
     const directGenerate = /直接生成|先生成|生成初版|不再回答/.test(message);
     const nextQuestion = directGenerate || questionCount >= 5 ? null : oneQuestion(turn.nextQuestion);
-    const extractedFacts = unique([...confirmedFacts, ...turn.extractedFacts.map((item) => sanitizeText(item, 500))]);
+    // 用户亲自提交的当轮原话是用户陈述事实；不应因为模型漏抽取而丢失。
+    const extractedFacts = unique([
+      ...confirmedFacts,
+      sanitizeText(message, 500),
+      ...turn.extractedFacts.map((item) => sanitizeText(item, 500)),
+    ]);
     const inferences = unique([...aiInferences, ...turn.aiInferences.map((item) => sanitizeText(item, 500))]);
-    const unknown = unique([...unknownItems, ...turn.unknownItems.map((item) => sanitizeText(item, 500))]);
+    const explicitUnknown = /待确认|不清楚|不知道|不确定/.test(message)
+      ? [`用户明确标记待确认：${sanitizeText(message, 450)}`]
+      : [];
+    const unknown = unique([...unknownItems, ...explicitUnknown, ...turn.unknownItems.map((item) => sanitizeText(item, 500))]);
     const updates = this.safeUpdates(turn.updates);
     const nextState = {
       ...state,
@@ -266,13 +274,14 @@ export class ExternalLandingSessionService {
     }
     if (!validation.ok) throw new LandingServiceError('EXT-50220', 'AI结果未通过结构校验，请重试', 502);
 
-    const map = enforceEvidencePolicy(validation.value);
+    const map = validation.value;
     map.factStatus = {
       confirmedFacts: jsonValue<string[]>(session.confirmed_facts, []),
       fileEvidence: jsonValue<string[]>(session.file_evidence, []),
       aiInferences: jsonValue<string[]>(session.ai_inferences, []),
       unknownItems: jsonValue<string[]>(session.unknown_items, []),
     };
+    enforceEvidencePolicy(map);
     map.nextActions = ['CONTINUE_OPTIMIZATION', 'REQUEST_FDE_REVIEW'];
     const postValidation = validateLandingMap(map);
     if (!postValidation.ok) throw new LandingServiceError('EXT-50221', '事实边界合并后结构校验失败，请重试', 502);
@@ -451,8 +460,12 @@ export class ExternalLandingSessionService {
     ]) {
       if (value) { clauses.push(`${column} = ?`); values.push(sanitizeText(value, 100)); }
     }
-    if (filters.dateFrom) { clauses.push('created_at >= ?'); values.push(new Date(filters.dateFrom).toISOString()); }
-    if (filters.dateTo) { clauses.push('created_at <= ?'); values.push(new Date(filters.dateTo).toISOString()); }
+    if (filters.primaryScenario) {
+      clauses.push(`json_extract(result_json, '$.primaryScenario.name') = ?`);
+      values.push(sanitizeText(filters.primaryScenario, 200));
+    }
+    if (filters.dateFrom) { clauses.push('created_at >= ?'); values.push(validIsoDate(filters.dateFrom, 'dateFrom')); }
+    if (filters.dateTo) { clauses.push('created_at <= ?'); values.push(validIsoDate(filters.dateTo, 'dateTo')); }
     const rows = this.db.raw.prepare(`
       SELECT source_platform AS sourcePlatform, source_channel AS sourceChannel, source_app AS sourceApp,
         source_version AS sourceVersion, COALESCE(campaign_code, '') AS campaignCode,
@@ -589,6 +602,12 @@ function validPhone(value: string) {
 
 function validEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function validIsoDate(value: unknown, field: string) {
+  const date = new Date(String(value || ''));
+  if (Number.isNaN(date.getTime())) throw new LandingServiceError('EXT-40081', `${field}日期格式不正确`, 400);
+  return date.toISOString();
 }
 
 function canonicalJson(value: unknown): string {

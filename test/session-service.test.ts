@@ -85,7 +85,7 @@ describe('ExternalLandingSessionService', () => {
     const created = create();
     const result = await service.addMessage(created.sessionId, created.sessionToken, { mode: 'KNOWN_PROBLEM', message: '报价很慢' }, 'message-1');
     assert.equal((result.nextQuestion?.match(/[？?]/g) || []).length, 1);
-    assert.deepEqual(result.extractedFacts, ['报价依赖两名老师傅']);
+    assert.deepEqual(result.extractedFacts, ['报价很慢', '报价依赖两名老师傅']);
     assert.deepEqual(result.aiInferences, ['历史订单可能可用于相似匹配']);
     assert.equal(result.canGenerateMap, true);
   });
@@ -122,8 +122,10 @@ describe('ExternalLandingSessionService', () => {
     const created = await withMessage();
     const result = await service.generateMap(created.sessionId, created.sessionToken, 'map-1');
     assert.equal(result.map.candidateScenarios[0].currentLoss, '待确认');
-    assert.deepEqual(result.map.factStatus.confirmedFacts, ['报价依赖两名老师傅']);
+    assert.deepEqual(result.map.factStatus.confirmedFacts, ['报价依赖两名老师傅，一次需要1至2小时。', '报价依赖两名老师傅']);
     assert.deepEqual(result.map.factStatus.aiInferences, ['历史订单可能可用于相似匹配']);
+    assert.match(result.map.validationPlan.stopConditions[0], /建议目标，待确认/);
+    assert.ok(result.map.factStatus.unknownItems.some((item: string) => item.includes('验证阈值待人工确认')));
     assert.match(result.markdown, /员工保留职责/);
   });
 

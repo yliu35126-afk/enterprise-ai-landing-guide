@@ -100,14 +100,39 @@ export function validateLandingMap(input: unknown): { ok: true; value: LandingMa
 }
 
 export function enforceEvidencePolicy(map: LandingMap) {
-  const confirmed = JSON.stringify(map.factStatus?.confirmedFacts || []);
+  const confirmed = JSON.stringify([
+    ...(map.factStatus?.confirmedFacts || []),
+    ...(map.factStatus?.fileEvidence || []),
+  ]);
+  const supportedNumbers = new Set(numericTokens(confirmed));
   for (const scenario of map.candidateScenarios || []) {
     const loss = String(scenario.currentLoss || '').trim();
     if (!loss) scenario.currentLoss = '待确认';
-    const numericClaims = loss.match(/(?:¥|￥|元|万|%|\d)/g);
-    if (numericClaims?.length && !/[0-9]/.test(confirmed)) scenario.currentLoss = '待确认';
+    const lossNumbers = numericTokens(loss);
+    if (lossNumbers.some((token) => !supportedNumbers.has(token))) scenario.currentLoss = '待确认';
+  }
+  const proposedThresholds: string[] = [];
+  for (const field of ['day7Result', 'day30Metrics', 'stopConditions'] as const) {
+    map.validationPlan[field] = (map.validationPlan[field] || []).map((claim: string) => {
+      const unsupported = numericTokens(claim).filter((token) => !supportedNumbers.has(token));
+      if (!unsupported.length || /待确认|建议目标/.test(claim)) return claim;
+      const suffix = '（建议目标，待确认）';
+      const labelled = `${claim.slice(0, Math.max(0, 300 - suffix.length))}${suffix}`;
+      proposedThresholds.push(labelled);
+      return labelled;
+    });
+  }
+  if (proposedThresholds.length) {
+    map.factStatus.unknownItems = Array.from(new Set([
+      ...(map.factStatus.unknownItems || []),
+      ...proposedThresholds.map((item) => `验证阈值待人工确认：${item}`),
+    ])).slice(0, 50);
   }
   return map;
+}
+
+function numericTokens(value: string) {
+  return String(value || '').match(/\d+(?:\.\d+)?/g) || [];
 }
 
 export function landingMapMarkdown(map: LandingMap) {
