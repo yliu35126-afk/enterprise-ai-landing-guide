@@ -14,6 +14,7 @@ describe('Production container definition', () => {
     assert.match(dockerfile, /api\/public\/clawhive\/v1\/health/);
     assert.doesNotMatch(dockerfile, /DEEPSEEK_API_KEY\s*=/);
     assert.doesNotMatch(dockerfile, /EXTERNAL_LANDING_FDE_API_KEY\s*=/);
+    assert.match(dockerfile, /COPY integrations \.\/integrations/);
   });
 
   it('生产Compose只绑定回环、根文件系统只读并丢弃Linux capabilities', async () => {

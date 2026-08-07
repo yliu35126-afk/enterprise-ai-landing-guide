@@ -142,7 +142,7 @@ def idempotency(value: str | None) -> str:
 
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(description="Enterprise AI Landing Guide API client")
-    root.add_argument("--base-url", default=os.environ.get("ENTERPRISE_AI_LANDING_API_BASE", "http://127.0.0.1:3020"))
+    root.add_argument("--base-url", default=os.environ.get("ENTERPRISE_AI_LANDING_API_BASE", "https://101.37.87.144"))
     root.add_argument("--timeout", type=float, default=35.0)
     commands = root.add_subparsers(dest="command", required=True)
     commands.add_parser("health")

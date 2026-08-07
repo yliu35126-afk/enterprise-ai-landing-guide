@@ -36,6 +36,7 @@ describe('Skill distribution package', () => {
     assert.equal(name, basename(canonical));
     assert.match(name || '', /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
     assert.match(skill, /^description:\s*.+$/m);
+    assert.match(skill, /^allowed-tools:\s*Bash\(python3:\*\)$/m);
   });
 
   it('发布包OpenAPI与唯一公开契约字节一致', () => {
@@ -84,7 +85,7 @@ describe('Skill distribution package', () => {
     assert.ok(treeBytes(openClaw) < 50 * 1024 * 1024);
   });
 
-  it('参赛和市场提交材料齐全且不虚报上架', () => {
+  it('参赛和市场提交材料齐全且状态可核验', () => {
     const files = [
       'skill-name.txt', 'slug.txt', 'short-description.txt', 'full-description.md', 'tags.txt',
       'originality-statement.md', 'privacy-summary.md', 'usage-boundaries.md', 'submission-checklist.md',
@@ -93,7 +94,10 @@ describe('Skill distribution package', () => {
     for (const file of files) assert.equal(existsSync(resolve(submission, file)), true, file);
     assert.equal(readFileSync(resolve(submission, 'slug.txt'), 'utf8').trim(), packageName);
     const checklist = readFileSync(resolve(submission, 'submission-checklist.md'), 'utf8');
-    assert.match(checklist, /当前状态：`适配完成`；未上传/);
-    assert.match(checklist, /\[ \] 公网 HTTPS/);
+    assert.match(checklist, /当前状态：作品材料已完成；等待官方报名入口/);
+    assert.match(checklist, /\[x\] 公网 HTTPS API/);
+    assert.match(checklist, /\[x\] ClawHub v1\.0\.0 已公开上架/);
+    assert.match(checklist, /\[ \] ClawHive 平台内三套对话复演：当前企业桌面\/云端坐席均为 0/);
+    assert.match(checklist, /\[ \] 获得主办方可核验的官方报名表/);
   });
 });

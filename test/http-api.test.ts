@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import YAML from 'yaml';
+import { config } from '../src/config.js';
 import { buildApp } from '../src/server.js';
 
 const prefix = '/api/public/clawhive/v1';
@@ -34,6 +35,15 @@ describe('Enterprise AI Landing Guide HTTP API', () => {
     assert.equal(response.statusCode, 200);
     assert.deepEqual(response.json(), { status: 'ok' });
     assert.equal(response.body.includes('database'), false);
+  });
+
+  it('公开OpenAPI地址使用当前服务地址且不暴露示例域名', async () => {
+    const response = await app.inject({ method: 'GET', url: `${prefix}/openapi.yaml` });
+    assert.equal(response.statusCode, 200);
+    assert.match(String(response.headers['content-type']), /application\/yaml/);
+    assert.match(response.body, new RegExp(config.publicBaseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.equal(response.body.includes('https://api.example.com'), false);
+    assert.equal(response.body.includes('/api/internal/'), false);
   });
 
   it('创建会话返回不透明Token与两种入口', async () => {

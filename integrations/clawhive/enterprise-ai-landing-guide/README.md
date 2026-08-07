@@ -12,17 +12,19 @@
 
 ## 配置
 
-1. 由服务运维方部署核心 API，生产环境启用 HTTPS。
-2. 将 `ENTERPRISE_AI_LANDING_API_BASE` 配置为核心服务根地址，例如 `https://ai.example.com`。
+1. 当前生产 API 根地址为 `https://101.37.87.144`，健康检查为 `https://101.37.87.144/api/public/clawhive/v1/health`。
+2. 如需显式配置，将 `ENTERPRISE_AI_LANDING_API_BASE` 设置为 `https://101.37.87.144`；适配器未设置该变量时也使用此生产地址。
 3. 不需要、也不应把 DeepSeek/OpenAI 密钥、FDE 集成密钥或数据库凭证放入 Skill 包；这些只存在受控服务端。
 
 ## 本地验证
 
 ```bash
-export ENTERPRISE_AI_LANDING_API_BASE=http://127.0.0.1:3020
+export ENTERPRISE_AI_LANDING_API_BASE=https://101.37.87.144
 python3 scripts/fde_client.py health
-python3 scripts/fde_client.py create --platform CLAWHUB --external-session-id local-check --mode KNOWN_PROBLEM
+python3 scripts/fde_client.py create --platform CLAWHIVE --external-session-id clawhive-check --mode KNOWN_PROBLEM
 ```
+
+ClawHive 安装使用 `CLAWHIVE`；ClawHub/OpenClaw 安装使用 `CLAWHUB`。两个平台只保留轻量适配差异，均调用同一个生产 API。
 
 创建会话的 JSON 响应包含一次会话 Token。在当前运行上下文中设置 `ENTERPRISE_AI_LANDING_SESSION_TOKEN`，不写入文件或日志。
 
@@ -34,7 +36,10 @@ python3 scripts/fde_client.py create --platform CLAWHUB --external-session-id lo
 clawhub skill publish ./enterprise-ai-landing-guide
 ```
 
-在 ClawHive 中，按平台后台要求导入 `openapi.yaml`、上传包中文件，再完成人工审核。实际发布前必须把 OpenAPI `servers[0].url` 替换为真实 HTTPS 域名。
+在 ClawHive 中，按平台后台要求导入 `openapi.yaml`、上传包中文件，再完成人工审核。包内 OpenAPI 已指向当前真实公网 HTTPS 服务。
+
+隐私说明：`https://101.37.87.144/legal/clawhive/privacy`
+公开 OpenAPI：`https://101.37.87.144/api/public/clawhive/v1/openapi.yaml`
 
 ## 许可
 

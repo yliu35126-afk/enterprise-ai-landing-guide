@@ -1,5 +1,6 @@
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
@@ -12,6 +13,9 @@ import { redactForLog, secureEqual } from './security.js';
 
 const moduleDir = dirname(fileURLToPath(import.meta.url));
 const publicDir = resolve(moduleDir, '../public');
+const clawHiveOpenApiPath = resolve(moduleDir, '../integrations/clawhive/openapi.yaml');
+const clawHiveOpenApi = readFileSync(clawHiveOpenApiPath, 'utf8')
+  .replace(/(^servers:\n\s+- url: ).+$/m, `$1${config.publicBaseUrl}`);
 
 export function buildApp(options: { databasePath?: string; service?: ExternalLandingSessionService } = {}) {
   const database = options.service?.db || new LandingDatabase(options.databasePath || config.databasePath);
@@ -61,6 +65,10 @@ export function buildApp(options: { databasePath?: string; service?: ExternalLan
   app.get(`${prefix}/health`, async () => {
     database.raw.prepare('SELECT 1').get();
     return { status: 'ok' };
+  });
+
+  app.get(`${prefix}/openapi.yaml`, async (_request, reply) => {
+    return reply.type('application/yaml; charset=utf-8').send(clawHiveOpenApi);
   });
 
   app.post(`${prefix}/sessions`, async (request, reply) => {

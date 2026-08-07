@@ -1,8 +1,9 @@
 ---
 name: enterprise-ai-landing-guide
 description: 用不超过6个动态问题，帮企业找到一个可在7天内验证的AI优先场景，并在用户分别授权后申请蓝图FDE人工复核。
+allowed-tools: Bash(python3:*)
 version: 1.0.0
-homepage: https://example.com/enterprise-ai-landing-guide
+homepage: https://101.37.87.144/enterprise-ai-landing-guide
 metadata:
   openclaw:
     primaryEnv: ENTERPRISE_AI_LANDING_API_BASE
@@ -45,10 +46,12 @@ metadata:
 
 ```bash
 python3 scripts/fde_client.py health
-python3 scripts/fde_client.py create --platform CLAWHUB --external-session-id current-chat --mode KNOWN_PROBLEM
+python3 scripts/fde_client.py create --platform CLAWHIVE --external-session-id current-chat --mode KNOWN_PROBLEM
 python3 scripts/fde_client.py message --session-id SESSION_ID --text "报价依赖两名老师傅"
 python3 scripts/fde_client.py generate --session-id SESSION_ID
 ```
+
+ClawHive 安装使用 `CLAWHIVE`；ClawHub/OpenClaw 安装使用 `CLAWHUB`。两者调用同一个生产 API 和诊断状态机，但分别写入真实来源归因。
 
 完整字段和错误处理见 [references/API.md](references/API.md)。三个完整业务样例见 [examples](examples)。
 
