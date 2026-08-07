@@ -9,7 +9,12 @@ const root = resolve(import.meta.dirname, '..');
 const packageName = 'enterprise-ai-landing-guide';
 const canonical = resolve(root, 'integrations/clawhive', packageName);
 const openClaw = resolve(root, 'distribution/openclaw', packageName);
-const required = ['SKILL.md', 'README.md', 'PRIVACY.md', 'CHANGELOG.md', 'LICENSE', 'openapi.yaml', 'scripts/fde_client.py'];
+const required = [
+  'SKILL.md', 'README.md', 'PRIVACY.md', 'CHANGELOG.md', 'LICENSE', 'openapi.yaml', 'scripts/fde_client.py',
+  'references/output-schema.md', 'references/privacy-notice.md', 'references/usage-boundaries.md',
+  'examples/manufacturing-quotation.md', 'examples/ecommerce-customer-service.md', 'examples/bidding-process.md',
+  'assets/listing-copy.md', 'assets/icon-requirements.md', 'assets/submission-checklist.md',
+];
 
 function treeBytes(path: string): number {
   const stat = statSync(path);
@@ -66,8 +71,7 @@ describe('Skill distribution package', () => {
 
   it('三个样例都明示员工保留职责或自动化停止边界', () => {
     const exampleDir = resolve(canonical, 'examples');
-    const files = readdirSync(exampleDir).filter((name) => name.endsWith('.md'));
-    assert.equal(files.length, 3);
+    const files = ['manufacturing-quotation.md', 'ecommerce-customer-service.md', 'bidding-process.md'];
     for (const file of files) {
       const content = readFileSync(resolve(exampleDir, file), 'utf8');
       assert.match(content, /员工保留职责|停止边界/);

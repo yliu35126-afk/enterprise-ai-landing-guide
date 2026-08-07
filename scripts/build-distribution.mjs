@@ -14,6 +14,16 @@ const zipPath = resolve(artifactRoot, `${packageName}-1.0.0.zip`);
 
 await mkdir(source, { recursive: true });
 await copyFile(openApi, resolve(source, 'openapi.yaml'));
+for (const [from, to] of [
+  ['references/OUTPUT.md', 'references/output-schema.md'],
+  ['PRIVACY.md', 'references/privacy-notice.md'],
+  ['examples/01-manufacturing-quotation.md', 'examples/manufacturing-quotation.md'],
+  ['examples/02-ecommerce-presales.md', 'examples/ecommerce-customer-service.md'],
+  ['examples/03-tender-screening.md', 'examples/bidding-process.md'],
+]) {
+  await mkdir(dirname(resolve(source, to)), { recursive: true });
+  await copyFile(resolve(source, from), resolve(source, to));
+}
 await rm(destination, { recursive: true, force: true });
 await mkdir(openClawRoot, { recursive: true });
 await cp(source, destination, { recursive: true });
