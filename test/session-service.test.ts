@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import type { LandingAi } from '../src/llm.js';
 import { LandingDatabase } from '../src/db.js';
@@ -181,19 +182,54 @@ describe('ExternalLandingSessionService', () => {
     assert.equal(count, 0);
   });
 
+  it('超过允许大小的文件在写入前被拒绝', async () => {
+    const created = create();
+    await assert.rejects(
+      () => service.addAttachment(created.sessionId, created.sessionToken, {
+        filename: 'oversized.txt', mimetype: 'text/plain', buffer: Buffer.alloc(11 * 1024 * 1024),
+      }, 'file-oversized'),
+      (error: any) => error instanceof LandingServiceError && error.code === 'EXT-41300',
+    );
+    const count = (db.raw.prepare('SELECT COUNT(*) AS count FROM external_skill_attachment').get() as any).count;
+    assert.equal(count, 0);
+  });
+
   it('过期会话拒绝继续使用', () => {
     const created = create();
     db.raw.prepare('UPDATE external_skill_session SET expires_at=? WHERE id=?').run('2020-01-01T00:00:00.000Z', created.sessionId);
     assert.throws(() => service.getMap(created.sessionId, created.sessionToken), LandingServiceError);
   });
 
-  it('用户删除后匿名会话和关联数据不可恢复', async () => {
+  it('用户删除后匿名会话、关联数据和临时附件不可恢复', async () => {
     const created = await withMessage();
+    await service.addAttachment(created.sessionId, created.sessionToken, {
+      filename: 'evidence.txt', mimetype: 'text/plain', buffer: Buffer.from('仅用于自动化测试的脱敏证据'),
+    }, 'file-delete');
+    const attachment = db.raw.prepare('SELECT stored_path FROM external_skill_attachment WHERE session_id=?').get(created.sessionId) as { stored_path: string };
+    assert.equal(existsSync(attachment.stored_path), true);
     const result = await service.deleteSession(created.sessionId, created.sessionToken);
     assert.equal(result.deleted, true);
     assert.equal(db.session(created.sessionId), undefined);
+    assert.equal(existsSync(attachment.stored_path), false);
     const messages = (db.raw.prepare('SELECT COUNT(*) AS count FROM external_skill_message').get() as any).count;
     assert.equal(messages, 0);
+  });
+
+  it('保留期结束后自动清理会话和临时附件', async () => {
+    const created = create();
+    await service.addAttachment(created.sessionId, created.sessionToken, {
+      filename: 'expired.txt', mimetype: 'text/plain', buffer: Buffer.from('仅用于过期清理测试的脱敏证据'),
+    }, 'file-expired');
+    const attachment = db.raw.prepare('SELECT stored_path FROM external_skill_attachment WHERE session_id=?').get(created.sessionId) as { stored_path: string };
+    assert.equal(existsSync(attachment.stored_path), true);
+    db.raw.prepare('UPDATE external_skill_session SET retention_expires_at=? WHERE id=?')
+      .run('2020-01-01T00:00:00.000Z', created.sessionId);
+
+    const result = await service.cleanupExpired();
+
+    assert.deepEqual(result, { deletedSessions: 1 });
+    assert.equal(db.session(created.sessionId), undefined);
+    assert.equal(existsSync(attachment.stored_path), false);
   });
 
   it('多平台会话共用核心状态机但统计独立', async () => {
