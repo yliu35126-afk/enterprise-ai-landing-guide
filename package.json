@@ -14,6 +14,7 @@
     "build:distribution": "node scripts/build-distribution.mjs",
     "build:adapters": "node scripts/build-platform-openapi.mjs && node scripts/build-dify-adapter.mjs",
     "package:dify": "dify plugin package distribution/dify/enterprise-ai-landing-guide-plugin --output_path ../../artifacts/enterprise-ai-landing-guide/enterprise-ai-landing-guide-dify-1.0.0.difypkg",
+    "benchmark:resources": "node scripts/resource-benchmark.mjs",
     "test": "NODE_ENV=test EXTERNAL_DATA_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= FDE_ENTERPRISE_ID=tenant-test node --import tsx --test --test-concurrency=1 test/**/*.test.ts",
     "test:coverage": "NODE_ENV=test EXTERNAL_DATA_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= FDE_ENTERPRISE_ID=tenant-test node --experimental-test-coverage --import tsx --test --test-concurrency=1 test/**/*.test.ts"
   },
