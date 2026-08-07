@@ -9,6 +9,7 @@ const root = resolve(import.meta.dirname, '..');
 const packageName = 'enterprise-ai-landing-guide';
 const canonical = resolve(root, 'integrations/clawhive', packageName);
 const openClaw = resolve(root, 'distribution/openclaw', packageName);
+const submission = resolve(root, '../../artifacts/clawhive-submission');
 const required = [
   'SKILL.md', 'README.md', 'PRIVACY.md', 'CHANGELOG.md', 'LICENSE', 'openapi.yaml', 'scripts/fde_client.py',
   'references/output-schema.md', 'references/privacy-notice.md', 'references/usage-boundaries.md',
@@ -81,5 +82,18 @@ describe('Skill distribution package', () => {
 
   it('发布包远小于ClawHub 50MB上限', () => {
     assert.ok(treeBytes(openClaw) < 50 * 1024 * 1024);
+  });
+
+  it('参赛和市场提交材料齐全且不虚报上架', () => {
+    const files = [
+      'skill-name.txt', 'slug.txt', 'short-description.txt', 'full-description.md', 'tags.txt',
+      'originality-statement.md', 'privacy-summary.md', 'usage-boundaries.md', 'submission-checklist.md',
+      'review-notes.md', 'demo-script.md', 'cover-copy.md',
+    ];
+    for (const file of files) assert.equal(existsSync(resolve(submission, file)), true, file);
+    assert.equal(readFileSync(resolve(submission, 'slug.txt'), 'utf8').trim(), packageName);
+    const checklist = readFileSync(resolve(submission, 'submission-checklist.md'), 'utf8');
+    assert.match(checklist, /当前状态：`适配完成`；未上传/);
+    assert.match(checklist, /\[ \] 公网 HTTPS/);
   });
 });
