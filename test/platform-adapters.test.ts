@@ -62,12 +62,41 @@ describe('Platform adapters', () => {
     assert.match(report, /不虚报上架/);
   });
 
+  it('P2目录按正式发布要求补齐且不虚报状态', () => {
+    const required = [
+      'distribution/smithery/listing/server-config.md',
+      'distribution/smithery/listing/listing-copy.md',
+      'distribution/smithery/listing/authentication.md',
+      'distribution/smithery/listing/privacy.md',
+      'distribution/smithery/listing/submission-checklist.md',
+      'distribution/glama/listing/listing-copy.md',
+      'distribution/glama/listing/repository-metadata.md',
+      'distribution/glama/listing/privacy.md',
+      'distribution/glama/listing/submission-checklist.md',
+      'distribution/modelscope/listing/compatibility-report.md',
+      'distribution/modelscope/listing/listing-copy.md',
+      'distribution/modelscope/listing/deployment-notes.md',
+      'distribution/modelscope/listing/submission-checklist.md',
+    ];
+    for (const file of required) assert.ok(read(file).length > 100, file);
+    assert.match(read(required[0]), /Streamable HTTP/);
+    assert.match(read(required[2]), /OAuth 2\.1/);
+    assert.match(read(required[6]), /sourcePlatform=GLAMA/);
+    assert.match(read(required[9]), /不能给出“平台内测试通过”/);
+    assert.match(read(required[4]), /当前状态：`适配完成`/);
+    assert.match(read(required[8]), /当前状态：`适配完成`/);
+    assert.match(read(required[12]), /当前状态：`适配完成`/);
+  });
+
   it('所有新适配文件不含凭证或Cookie', () => {
     const files = [
       'distribution/chatgpt/enterprise-ai-landing-guide/gpt-instructions.md',
       'distribution/coze/enterprise-ai-landing-guide/agent-instructions.md',
       'distribution/lobster-ai/installation-and-validation/README.md',
       'distribution/website/enterprise-ai-landing-guide/embed.html',
+      'distribution/smithery/listing/authentication.md',
+      'distribution/glama/listing/privacy.md',
+      'distribution/modelscope/listing/deployment-notes.md',
     ];
     for (const file of files) {
       const content = read(file);
