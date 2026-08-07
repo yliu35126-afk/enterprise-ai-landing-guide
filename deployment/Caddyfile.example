@@ -1,0 +1,16 @@
+guide.example.com {
+  encode zstd gzip
+  reverse_proxy 127.0.0.1:3020
+
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+  }
+
+  log {
+    output file /var/log/caddy/enterprise-ai-landing-guide-access.log
+    format json
+  }
+}
+

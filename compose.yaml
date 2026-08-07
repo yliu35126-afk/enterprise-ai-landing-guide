@@ -1,0 +1,51 @@
+services:
+  enterprise-ai-landing-guide:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: enterprise-ai-landing-guide:1.0.0
+    restart: unless-stopped
+    init: true
+    ports:
+      - "127.0.0.1:${EXTERNAL_HOST_PORT:-3020}:3020"
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3020
+      EXTERNAL_PUBLIC_BASE_URL: ${EXTERNAL_PUBLIC_BASE_URL:?set EXTERNAL_PUBLIC_BASE_URL to the public HTTPS origin}
+      EXTERNAL_DATABASE_PATH: .runtime/enterprise-ai-landing-guide.sqlite
+      EXTERNAL_UPLOAD_DIR: .runtime/uploads
+      EXTERNAL_SKILL_RETENTION_DAYS: ${EXTERNAL_SKILL_RETENTION_DAYS:-30}
+      EXTERNAL_SESSION_TTL_MINUTES: ${EXTERNAL_SESSION_TTL_MINUTES:-120}
+      EXTERNAL_MAX_UPLOAD_MB: ${EXTERNAL_MAX_UPLOAD_MB:-10}
+      EXTERNAL_RATE_LIMIT_PER_MINUTE: ${EXTERNAL_RATE_LIMIT_PER_MINUTE:-60}
+      FDE_API_BASE: ${FDE_API_BASE:-http://host.docker.internal:3001/api}
+      FDE_ENTERPRISE_ID: ${FDE_ENTERPRISE_ID:?set the authorized FDE enterprise id}
+      EXTERNAL_LANDING_FDE_API_KEY: ${EXTERNAL_LANDING_FDE_API_KEY:?set the shared FDE conversion key}
+      EXTERNAL_DATA_ENCRYPTION_KEY: ${EXTERNAL_DATA_ENCRYPTION_KEY:?set a 32-byte base64 encryption key}
+      EXTERNAL_STATS_API_KEY: ${EXTERNAL_STATS_API_KEY:?set the internal statistics key}
+      DEFAULT_AI_MODEL: ${DEFAULT_AI_MODEL:-deepseek-chat}
+      DEEPSEEK_API_URL: ${DEEPSEEK_API_URL:-https://api.deepseek.com/v1/chat/completions}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?set the model provider key}
+      LLM_TIMEOUT_MS: ${LLM_TIMEOUT_MS:-90000}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - enterprise-ai-landing-data:/app/.runtime
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3020/api/public/clawhive/v1/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+
+volumes:
+  enterprise-ai-landing-data:
+

@@ -1,0 +1,14 @@
+node_modules
+dist
+.runtime
+.env
+.env.*
+test
+coverage
+*.log
+*.sqlite
+*.sqlite3
+distribution/dify/**/__pycache__
+distribution/mcp/**/node_modules
+distribution/mcp/**/dist
+
