@@ -457,8 +457,15 @@ export class ExternalLandingSessionService {
   }
 
   statistics(filters: Record<string, any> = {}) {
-    const clauses = ['deleted_at IS NULL'];
-    const values: Array<string> = [];
+    const tenantScope = sanitizeText(filters.tenantScope, 36);
+    if (!tenantScope) {
+      throw new LandingServiceError('EXT-40080', '统计请求必须明确tenantScope', 400);
+    }
+    if (!config.fdeEnterpriseId || tenantScope !== config.fdeEnterpriseId) {
+      throw new LandingServiceError('EXT-40380', '统计租户不在当前服务授权范围内', 403);
+    }
+    const clauses = ['deleted_at IS NULL', 'tenant_scope = ?'];
+    const values: Array<string> = [tenantScope];
     for (const [column, value] of [
       ['source_platform', filters.sourcePlatform], ['source_channel', filters.sourceChannel], ['source_app', filters.sourceApp],
       ['source_version', filters.sourceVersion], ['campaign_code', filters.campaignCode], ['industry', filters.industry],

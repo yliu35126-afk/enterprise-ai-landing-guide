@@ -205,6 +205,26 @@ describe('Enterprise AI Landing Guide HTTP API', () => {
     assert.equal(wrong.json().code, 'EXT-40180');
   });
 
+  it('内部统计端点在凭证正确后仍要求显式且匹配的tenantScope', async () => {
+    assert.ok(config.statsApiKey.length >= 32);
+    const headers = { 'x-stats-key': config.statsApiKey };
+    const missing = await app.inject({
+      method: 'GET', url: '/api/internal/enterprise-ai-landing-guide/v1/stats', headers,
+    });
+    const wrong = await app.inject({
+      method: 'GET', url: '/api/internal/enterprise-ai-landing-guide/v1/stats?tenantScope=tenant-other', headers,
+    });
+    const allowed = await app.inject({
+      method: 'GET', url: `/api/internal/enterprise-ai-landing-guide/v1/stats?tenantScope=${encodeURIComponent(config.fdeEnterpriseId)}`, headers,
+    });
+    assert.equal(missing.statusCode, 400);
+    assert.equal(missing.json().code, 'EXT-40080');
+    assert.equal(wrong.statusCode, 403);
+    assert.equal(wrong.json().code, 'EXT-40380');
+    assert.equal(allowed.statusCode, 200);
+    assert.deepEqual(allowed.json().rows, []);
+  });
+
   it('OpenAPI与已注册公开业务路由逐项一致', () => {
     const document = YAML.parse(readFileSync(openApiPath, 'utf8')) as { paths: Record<string, Record<string, unknown>> };
     const documented = new Set<string>();

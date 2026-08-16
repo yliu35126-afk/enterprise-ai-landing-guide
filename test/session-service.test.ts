@@ -237,9 +237,32 @@ describe('ExternalLandingSessionService', () => {
     const coze = create('COZE');
     await service.addMessage(clawhub.sessionId, clawhub.sessionToken, { mode: 'KNOWN_PROBLEM', message: '报价慢' }, 'c1');
     await service.addMessage(coze.sessionId, coze.sessionToken, { mode: 'KNOWN_PROBLEM', message: '客服慢' }, 'c2');
-    const stats = service.statistics();
+    const stats = service.statistics({ tenantScope: 'tenant-test' });
     assert.equal(stats.rows.length, 2);
     assert.deepEqual(new Set(stats.rows.map((row) => row.sourcePlatform)), new Set(['CLAWHUB', 'COZE']));
+  });
+
+  it('内部统计拒绝缺失或错误tenantScope', () => {
+    assert.throws(
+      () => service.statistics(),
+      (error: any) => error instanceof LandingServiceError && error.code === 'EXT-40080',
+    );
+    assert.throws(
+      () => service.statistics({ tenantScope: 'tenant-other' }),
+      (error: any) => error instanceof LandingServiceError && error.code === 'EXT-40380',
+    );
+  });
+
+  it('正确tenantScope也不会汇总数据库中的其他租户行', () => {
+    create('CLAWHUB');
+    const foreign = create('COZE');
+    db.raw.prepare('UPDATE external_skill_session SET tenant_scope=? WHERE id=?')
+      .run('tenant-other', foreign.sessionId);
+
+    const stats = service.statistics({ tenantScope: 'tenant-test' });
+
+    assert.equal(stats.rows.length, 1);
+    assert.equal(stats.rows[0].sourcePlatform, 'CLAWHUB');
   });
 
   it('未配置FDE服务密钥时不会假装转换成功', async () => {
