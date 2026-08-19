@@ -1,0 +1,29 @@
+version: 1.0.0
+type: plugin
+author: blueprint-fde
+name: enterprise-ai-landing-guide
+label:
+  en_US: Enterprise AI Landing Guide
+  zh_Hans: 企业AI落地导航
+description:
+  en_US: Generate one prioritized enterprise AI scenario and a seven-day validation plan.
+  zh_Hans: 生成一个优先企业AI场景、介入流程和7天验证方案。
+icon: icon.svg
+icon_dark: icon-dark.svg
+resource:
+  memory: 268435456
+  permission: {}
+plugins:
+  tools:
+    - provider/enterprise-ai-landing-guide.yaml
+meta:
+  version: 0.0.1
+  arch: [amd64, arm64]
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: 1.0.0
+created_at: 2026-08-06T00:00:00+08:00
+privacy: privacy.md
+verified: false

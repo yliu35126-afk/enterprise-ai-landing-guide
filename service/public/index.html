@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="输入企业现状或一个具体业务问题，生成优先AI场景、介入流程和7天验证方案。" />
+  <title>企业AI落地导航｜蓝图FDE</title>
+  <link rel="stylesheet" href="/assets/app.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="brand">蓝图 FDE</div>
+      <h1>企业AI落地导航</h1>
+      <p class="lead">不知道AI该用在哪里？输入企业现状或一个具体业务问题，生成优先AI场景、介入流程和7天验证方案。</p>
+      <div class="promise"><span>先获得地图</span><span>不强制留联系方式</span><span>正式实施前人工确认</span></div>
+    </header>
+
+    <section id="start" class="panel">
+      <h2>你现在更接近哪种情况？</h2>
+      <div class="mode-grid">
+        <button data-mode="KNOWN_PROBLEM" class="mode-card"><strong>我已经有明确问题</strong><small>例如报价太慢、客服依赖老员工、销售跟进容易丢失</small></button>
+        <button data-mode="OPPORTUNITY_SCAN" class="mode-card"><strong>我不知道AI该用在哪里</strong><small>从销售、报价、客服、交付、协同、回款或知识传承中找1—2个重点</small></button>
+      </div>
+    </section>
+
+    <section id="chat" class="panel hidden">
+      <div class="section-head"><div><span class="eyebrow">单轮动态追问</span><h2>一次只回答一个关键问题</h2></div><button id="delete" class="text-button">删除本次匿名数据</button></div>
+      <div id="messages" class="messages" aria-live="polite"></div>
+      <form id="message-form" class="composer">
+        <textarea id="message" maxlength="4000" placeholder="输入企业现状或具体问题…" required></textarea>
+        <div class="composer-actions"><label class="file-label">添加资料<input id="attachment" type="file" accept=".txt,.md,.csv,.json,.pdf,.docx,.xlsx,.png,.jpg,.jpeg" /></label><button type="submit" class="primary">发送</button></div>
+      </form>
+      <button id="generate" class="secondary" disabled>基于当前信息生成初版地图</button>
+    </section>
+
+    <section id="map-section" class="panel hidden">
+      <span class="eyebrow">你的结果</span><h2>企业AI落地地图</h2>
+      <pre id="map"></pre>
+      <div class="boundary">地图已区分已确认事实、文件证据、AI推断和待确认项。AI结果仅供业务评估，不构成收益保证。</div>
+      <button id="open-consent" class="primary">申请人工落地复核</button>
+    </section>
+
+    <section id="consent" class="panel hidden">
+      <h2>由你决定保存和联系范围</h2>
+      <form id="consent-form" class="form-grid">
+        <label><span>企业名称</span><input id="company-name" maxlength="200" required /></label>
+        <label class="check"><input id="consent-store" type="checkbox" required /><span>我同意保存本次落地地图并申请人工复核</span></label>
+        <label class="check"><input id="consent-contact" type="checkbox" /><span>我另行同意蓝图FDE联系我</span></label>
+        <div id="contact-fields" class="contact-fields hidden">
+          <label><span>联系人</span><input id="contact-name" maxlength="100" /></label>
+          <label><span>手机或邮箱（二选一）</span><input id="contact-method" maxlength="200" /></label>
+        </div>
+        <button class="primary" type="submit">确认授权并提交复核</button>
+      </form>
+      <p class="legal">提交即表示你已阅读<a href="/legal/clawhive/privacy" target="_blank">隐私说明</a>和<a href="/legal/clawhive/terms" target="_blank">服务条款</a>。</p>
+    </section>
+
+    <section id="done" class="panel hidden"><h2>已进入人工复核队列</h2><p id="done-text"></p></section>
+  </main>
+  <script type="module" src="/assets/app.js"></script>
+</body>
+</html>

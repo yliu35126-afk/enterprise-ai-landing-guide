@@ -1,0 +1,9 @@
+{
+  "route": "/enterprise-ai-landing-guide",
+  "sourcePlatform": "FDE_WEBSITE",
+  "sourceVersion": "1.0.0",
+  "allowedQueryParameters": ["campaignCode"],
+  "requiresFdeLogin": false,
+  "exposesFdeAdmin": false,
+  "mobileSupported": true
+}

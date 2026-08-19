@@ -1,0 +1,79 @@
+identity:
+  name: answer_ai_landing_question
+  author: blueprint-fde
+  label:
+    en_US: Answer Ai Landing Question
+    zh_Hans: 回答一轮落地问题
+description:
+  human:
+    en_US: 提交一条用户回答，每轮只获取一个主要问题。
+    zh_Hans: 提交一条用户回答，每轮只获取一个主要问题。
+  llm: 提交一条用户回答，每轮只获取一个主要问题。
+parameters:
+  - name: session_id
+    type: string
+    required: true
+    label:
+      en_US: 匿名会话ID
+      zh_Hans: 匿名会话ID
+    human_description:
+      en_US: 使用创建会话工具返回的sessionId
+      zh_Hans: 使用创建会话工具返回的sessionId
+    llm_description: 使用创建会话工具返回的sessionId
+    form: llm
+  - name: session_token
+    type: string
+    required: true
+    label:
+      en_US: 短期会话Token
+      zh_Hans: 短期会话Token
+    human_description:
+      en_US: 仅使用创建会话返回的sessionToken，不写入日志
+      zh_Hans: 仅使用创建会话返回的sessionToken，不写入日志
+    llm_description: 仅使用创建会话返回的sessionToken，不写入日志
+    form: llm
+  - name: message
+    type: string
+    required: true
+    label:
+      en_US: 用户回答
+      zh_Hans: 用户回答
+    human_description:
+      en_US: 用户亲自提交的当轮业务事实
+      zh_Hans: 用户亲自提交的当轮业务事实
+    llm_description: 用户亲自提交的当轮业务事实
+    form: llm
+  - name: mode
+    type: select
+    required: false
+    label:
+      en_US: 入口模式
+      zh_Hans: 入口模式
+    human_description:
+      en_US: 入口模式
+      zh_Hans: 入口模式
+    llm_description: 入口模式
+    form: llm
+    options:
+      - value: KNOWN_PROBLEM
+        label:
+          en_US: KNOWN_PROBLEM
+          zh_Hans: KNOWN_PROBLEM
+      - value: OPPORTUNITY_SCAN
+        label:
+          en_US: OPPORTUNITY_SCAN
+          zh_Hans: OPPORTUNITY_SCAN
+  - name: idempotency_key
+    type: string
+    required: false
+    label:
+      en_US: 幂等键
+      zh_Hans: 幂等键
+    human_description:
+      en_US: 同一请求重试时复用；新操作使用新键
+      zh_Hans: 同一请求重试时复用；新操作使用新键
+    llm_description: 同一请求重试时复用；新操作使用新键
+    form: llm
+extra:
+  python:
+    source: tools/answer_ai_landing_question.py

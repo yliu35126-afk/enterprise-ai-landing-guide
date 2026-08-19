@@ -1,0 +1,21 @@
+{
+  "server": "enterprise-ai-landing-guide-mcp",
+  "version": "1.0.0",
+  "transport": "streamable-http",
+  "endpoint": "/mcp",
+  "tools": [
+    "start_ai_landing_session",
+    "answer_ai_landing_question",
+    "upload_ai_landing_attachment",
+    "generate_ai_landing_map",
+    "get_ai_landing_map",
+    "request_human_fde_review",
+    "delete_ai_landing_session"
+  ],
+  "forbiddenCapabilities": [
+    "arbitrary_database_query",
+    "arbitrary_filesystem_access",
+    "fde_admin_api",
+    "credential_export"
+  ]
+}

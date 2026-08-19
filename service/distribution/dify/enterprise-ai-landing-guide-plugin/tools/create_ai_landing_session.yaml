@@ -1,0 +1,57 @@
+identity:
+  name: create_ai_landing_session
+  author: blueprint-fde
+  label:
+    en_US: Create Ai Landing Session
+    zh_Hans: 创建企业AI落地会话
+description:
+  human:
+    en_US: 创建Dify来源的匿名会话，不写入FDE客户或商机。
+    zh_Hans: 创建Dify来源的匿名会话，不写入FDE客户或商机。
+  llm: 创建Dify来源的匿名会话，不写入FDE客户或商机。
+parameters:
+  - name: external_session_id
+    type: string
+    required: true
+    label:
+      en_US: Dify会话ID
+      zh_Hans: Dify会话ID
+    human_description:
+      en_US: 当前Dify对话的稳定唯一ID
+      zh_Hans: 当前Dify对话的稳定唯一ID
+    llm_description: 当前Dify对话的稳定唯一ID
+    form: llm
+  - name: mode
+    type: select
+    required: false
+    label:
+      en_US: 入口模式
+      zh_Hans: 入口模式
+    human_description:
+      en_US: 入口模式
+      zh_Hans: 入口模式
+    llm_description: 入口模式
+    form: llm
+    options:
+      - value: KNOWN_PROBLEM
+        label:
+          en_US: KNOWN_PROBLEM
+          zh_Hans: KNOWN_PROBLEM
+      - value: OPPORTUNITY_SCAN
+        label:
+          en_US: OPPORTUNITY_SCAN
+          zh_Hans: OPPORTUNITY_SCAN
+  - name: campaign_code
+    type: string
+    required: false
+    label:
+      en_US: 活动码
+      zh_Hans: 活动码
+    human_description:
+      en_US: 可选渠道活动码
+      zh_Hans: 可选渠道活动码
+    llm_description: 可选渠道活动码
+    form: llm
+extra:
+  python:
+    source: tools/create_ai_landing_session.py
