@@ -10,6 +10,13 @@
 - `references/`：调用契约与输出解释
 - `examples/`：制造报价、电商售前、招投标筛选三类样例
 
+## 目录边界
+
+- 根目录（`SKILL.md`、`openapi.yaml`、`references/`、`examples/` 等）是可发布的比赛 Skill 包；按现有 Skill 发布流程打包时只取根目录内容。
+- `service/` 是独立运行的企业 AI 落地导航服务，包含服务端源码、测试、部署文件和平台适配器；它不属于 Skill 包的上传内容。
+- `service/` 通过 Git subtree 从 FDE 稳定 checkpoint 的 `external_services/enterprise-ai-landing-guide` 导入，保留服务自身提交历史。这里没有复制 FDE 的其它模块、密钥或客户数据。
+- `service/distribution/` 内与根目录 Skill 相似的发行副本是服务原有的构建产物，当前为保持来源完整而保留；不要把它与根目录 Skill 混用或重复发布。
+
 ## 配置
 
 1. 当前生产 API 根地址为 `https://101.37.87.144`，健康检查为 `https://101.37.87.144/api/public/clawhive/v1/health`。
