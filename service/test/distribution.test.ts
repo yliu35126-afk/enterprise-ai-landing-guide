@@ -9,7 +9,7 @@ const root = resolve(import.meta.dirname, '..');
 const packageName = 'enterprise-ai-landing-guide';
 const canonical = resolve(root, 'integrations/clawhive', packageName);
 const openClaw = resolve(root, 'distribution/openclaw', packageName);
-const submission = resolve(root, '../../artifacts/clawhive-submission');
+const submission = resolve(root, '../artifacts/clawhive-submission');
 const required = [
   'SKILL.md', 'README.md', 'PRIVACY.md', 'CHANGELOG.md', 'LICENSE', 'openapi.yaml', 'scripts/fde_client.py',
   'references/output-schema.md', 'references/privacy-notice.md', 'references/usage-boundaries.md',

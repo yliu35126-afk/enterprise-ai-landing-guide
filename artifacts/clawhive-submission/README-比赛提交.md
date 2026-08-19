@@ -32,7 +32,7 @@ Slug：`enterprise-ai-landing-guide`
 
 ## 公开入口
 
-- 体验页：<https://101.37.87.144/enterprise-ai-landing-guide>
+- 体验页：<https://fde.lantuzhigou.com/enterprise-ai-landing-guide>
 - 蓝图 FDE：<https://fde.lantuzhigou.com>
 - ClawHub 历史作品页：<https://clawhub.ai/yliu35126-afk/skills/enterprise-ai-landing-guide>
 - 历史 Skill 仓库：<https://github.com/yliu35126-afk/enterprise-ai-landing-guide>
