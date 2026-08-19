@@ -3,60 +3,62 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="输入企业现状或一个具体业务问题，生成优先AI场景、介入流程和7天验证方案。" />
+  <meta name="description" content="用几句话找到企业最值得先验证的AI场景，并获得清晰的下一步。" />
   <title>企业AI落地导航｜蓝图FDE</title>
   <link rel="stylesheet" href="/assets/app.css" />
 </head>
 <body>
   <main class="shell">
-    <header class="hero">
-      <div class="brand">蓝图 FDE</div>
-      <h1>企业AI落地导航</h1>
-      <p class="lead">不知道AI该用在哪里？输入企业现状或一个具体业务问题，生成优先AI场景、介入流程和7天验证方案。</p>
-      <div class="promise"><span>先获得地图</span><span>不强制留联系方式</span><span>正式实施前人工确认</span></div>
+    <header class="topbar">
+      <a class="brand" href="/enterprise-ai-landing-guide" aria-label="蓝图企业AI落地导航首页"><span class="brand-mark">蓝</span><span>蓝图 FDE</span></a>
+      <span class="topbar-note">先判断，再验证</span>
     </header>
 
-    <section id="start" class="panel">
-      <h2>你现在更接近哪种情况？</h2>
-      <div class="mode-grid">
-        <button data-mode="KNOWN_PROBLEM" class="mode-card"><strong>我已经有明确问题</strong><small>例如报价太慢、客服依赖老员工、销售跟进容易丢失</small></button>
-        <button data-mode="OPPORTUNITY_SCAN" class="mode-card"><strong>我不知道AI该用在哪里</strong><small>从销售、报价、客服、交付、协同、回款或知识传承中找1—2个重点</small></button>
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero-copy">
+        <span class="eyebrow">企业AI落地导航</span>
+        <h1 id="page-title">先找到最值得解决的一个问题。</h1>
+        <p class="lead">告诉我们企业正在经历什么，AI会帮你梳理经营影响、优先场景和最小验证方式。你不需要先懂AI，也不需要填写一份复杂问卷。</p>
+        <div class="promise" aria-label="使用说明"><span><i>01</i> 先说现状</span><span><i>02</i> 得到判断</span><span><i>03</i> 再决定是否落地</span></div>
       </div>
+      <aside class="hero-aside" aria-label="导航原则"><span class="aside-label">这次导航会回答</span><strong>现在最适合从哪里开始？</strong><p>把AI能做的工作和需要人判断的部分分开，先用真实资料做一个小验证。</p></aside>
     </section>
 
-    <section id="chat" class="panel hidden">
-      <div class="section-head"><div><span class="eyebrow">单轮动态追问</span><h2>一次只回答一个关键问题</h2></div><button id="delete" class="text-button">删除本次匿名数据</button></div>
-      <div id="messages" class="messages" aria-live="polite"></div>
-      <form id="message-form" class="composer">
-        <textarea id="message" maxlength="4000" placeholder="输入企业现状或具体问题…" required></textarea>
-        <div class="composer-actions"><label class="file-label">添加资料<input id="attachment" type="file" accept=".txt,.md,.csv,.json,.pdf,.docx,.xlsx,.png,.jpg,.jpeg" /></label><button type="submit" class="primary">发送</button></div>
-      </form>
-      <button id="generate" class="secondary" disabled>基于当前信息生成初版地图</button>
+    <section id="start" class="panel start-panel" aria-labelledby="start-title">
+      <div class="section-heading"><span class="step">开始</span><h2 id="start-title">你更接近哪种情况？</h2><p>选一个入口，我们会用最少的问题开始。</p></div>
+      <div class="mode-grid">
+        <button data-mode="KNOWN_PROBLEM" class="mode-card" type="button"><span class="mode-icon">↗</span><strong>我已经有一个具体问题</strong><small>例如报价慢、客户跟进容易丢、知识只能靠老师傅传。</small><span class="mode-link">从问题开始 <b>→</b></span></button>
+        <button data-mode="OPPORTUNITY_SCAN" class="mode-card" type="button"><span class="mode-icon">✦</span><strong>我想找找AI能帮什么</strong><small>从销售、交付、客服、协同等日常工作中，找到最值得先试的一处。</small><span class="mode-link">从现状开始 <b>→</b></span></button>
+      </div>
+      <p class="privacy-hint">不强制留联系方式。你可以随时删除本次内容。</p>
     </section>
 
-    <section id="map-section" class="panel hidden">
-      <span class="eyebrow">你的结果</span><h2>企业AI落地地图</h2>
-      <pre id="map"></pre>
-      <div class="boundary">地图已区分已确认事实、文件证据、AI推断和待确认项。AI结果仅供业务评估，不构成收益保证。</div>
-      <button id="open-consent" class="primary">申请人工落地复核</button>
+    <section id="chat" class="panel hidden" aria-labelledby="chat-title">
+      <div class="section-head"><div><span class="step">梳理现状</span><h2 id="chat-title">用几句话说清楚，就够了</h2><p class="section-subtitle">每次只问一个关键问题。你也可以直接生成一版初步判断。</p></div><button id="delete" class="text-button" type="button">删除本次内容</button></div>
+      <div id="messages" class="messages" aria-live="polite" aria-label="对话内容"><div class="empty-message">从上面的提示开始，你的回答会显示在这里。</div></div>
+      <form id="message-form" class="composer"><label class="sr-only" for="message">补充企业现状</label><textarea id="message" maxlength="4000" placeholder="例如：我们做工业设备，报价依赖两位老师傅，客户确认后经常要反复改图。" required></textarea><div class="composer-actions"><label class="file-label" for="attachment"><span class="upload-icon">＋</span>补充资料<input id="attachment" type="file" accept=".txt,.md,.csv,.json,.pdf,.docx,.xlsx,.png,.jpg,.jpeg" /></label><button type="submit" class="primary" id="send">继续梳理 <span>→</span></button></div><div id="upload-status" class="status-line" aria-live="polite"></div></form>
+      <button id="generate" class="secondary" type="button" disabled><span>✦</span> 生成我的落地判断</button><div id="chat-error" class="error-state hidden" role="alert"></div>
     </section>
 
-    <section id="consent" class="panel hidden">
-      <h2>由你决定保存和联系范围</h2>
-      <form id="consent-form" class="form-grid">
-        <label><span>企业名称</span><input id="company-name" maxlength="200" required /></label>
-        <label class="check"><input id="consent-store" type="checkbox" required /><span>我同意保存本次落地地图并申请人工复核</span></label>
-        <label class="check"><input id="consent-contact" type="checkbox" /><span>我另行同意蓝图FDE联系我</span></label>
-        <div id="contact-fields" class="contact-fields hidden">
-          <label><span>联系人</span><input id="contact-name" maxlength="100" /></label>
-          <label><span>手机或邮箱（二选一）</span><input id="contact-method" maxlength="200" /></label>
-        </div>
-        <button class="primary" type="submit">确认授权并提交复核</button>
-      </form>
-      <p class="legal">提交即表示你已阅读<a href="/legal/clawhive/privacy" target="_blank">隐私说明</a>和<a href="/legal/clawhive/terms" target="_blank">服务条款</a>。</p>
+    <section id="map-section" class="panel result-panel hidden" aria-labelledby="result-title">
+      <div class="result-header"><div><span class="step">导航结果</span><h2 id="result-title">你的企业AI落地判断</h2><p id="result-context" class="section-subtitle"></p></div><span class="result-badge">基于当前信息</span></div>
+      <div id="map-loading" class="loading-state hidden" aria-live="polite"><span class="spinner"></span><div><strong>正在整理你的落地判断</strong><p>正在比较问题、经营影响和验证条件，请稍候。</p></div></div>
+      <div id="map-empty" class="empty-state hidden"><strong>还没有生成结果</strong><p>先补充至少一条企业现状，再生成你的落地判断。</p></div>
+      <div id="map-content" class="hidden">
+        <div class="priority-card"><div class="priority-label">最值得先做</div><h3 id="primary-name"></h3><p id="primary-reason"></p></div>
+        <div class="result-grid"><article class="result-card problem-card"><span class="card-kicker">现在的问题</span><h3 id="current-problem"></h3><p id="current-loss"></p></article><article class="result-card"><span class="card-kicker">AI能先帮你做</span><p id="ai-participation"></p></article><article class="result-card"><span class="card-kicker">仍需人工确认</span><ul id="human-responsibilities" class="clean-list"></ul></article></div>
+        <div class="detail-grid"><article class="detail-card"><div class="detail-title"><span class="detail-number">1</span><div><span class="card-kicker">最小验证</span><h3 id="validation-object"></h3></div></div><div class="detail-columns"><div><span class="muted-label">准备这些资料</span><ul id="required-materials" class="clean-list compact"></ul></div><div><span class="muted-label">验证时看什么</span><ul id="day7-result" class="clean-list compact"></ul></div></div></article><article class="detail-card flow-card"><span class="card-kicker">建议的工作方式</span><div id="ai-flow" class="flow-list"></div></article></div>
+        <details class="boundary-details"><summary>查看信息边界</summary><div class="boundary-grid"><div><span>已确认</span><ul id="confirmed-facts" class="clean-list compact"></ul></div><div><span>待确认</span><ul id="unknown-items" class="clean-list compact"></ul></div></div><p>正式实施前会由业务负责人确认事实、资料和责任边界。</p></details>
+        <div class="next-step"><div><span class="card-kicker">下一步</span><h3>如果这个方向值得继续，可以进入蓝图FDE正式落地</h3><p>把初步判断带给实施团队，再一起确认资料、范围和负责人。</p></div><a class="primary cta" href="https://fde.lantuzhigou.com/" target="_blank" rel="noopener">进入蓝图FDE <span>↗</span></a></div>
+        <div class="boundary">这是一份基于当前信息的业务判断，不构成收益保证。涉及重要业务动作时，始终保留人工确认。</div><button id="open-consent" class="secondary consent-cta" type="button">申请人工落地复核</button>
+      </div>
+      <div id="map-error" class="error-state hidden" role="alert"></div>
     </section>
 
-    <section id="done" class="panel hidden"><h2>已进入人工复核队列</h2><p id="done-text"></p></section>
+    <section id="consent" class="panel hidden" aria-labelledby="consent-title"><div class="section-heading"><span class="step">决定保存</span><h2 id="consent-title">由你决定是否进入人工复核</h2><p>不保存就不会进入后续业务流程；删除会话会移除本次内容和临时资料。</p></div><form id="consent-form" class="form-grid"><label><span>企业名称</span><input id="company-name" maxlength="200" placeholder="请输入企业名称" required /></label><label class="check"><input id="consent-store" type="checkbox" required /><span>我同意保存本次落地判断并申请人工复核</span></label><label class="check"><input id="consent-contact" type="checkbox" /><span>我另行同意蓝图FDE联系我</span></label><div id="contact-fields" class="contact-fields hidden"><label><span>联系人</span><input id="contact-name" maxlength="100" placeholder="选填" /></label><label><span>手机或邮箱（二选一）</span><input id="contact-method" maxlength="200" placeholder="选填" /></label></div><div id="consent-error" class="error-state hidden" role="alert"></div><button class="primary" type="submit">确认授权并提交复核 <span>→</span></button></form><p class="legal">提交即表示你已阅读<a href="/legal/clawhive/privacy" target="_blank">隐私说明</a>和<a href="/legal/clawhive/terms" target="_blank">服务条款</a>。</p></section>
+
+    <section id="done" class="panel done-panel hidden" aria-live="polite"><span class="success-icon">✓</span><h2>已进入人工复核</h2><p id="done-text"></p><a class="secondary" href="https://fde.lantuzhigou.com/" target="_blank" rel="noopener">进入蓝图FDE正式入口 <span>↗</span></a></section>
+    <footer><span>蓝图 FDE · 企业AI落地导航</span><span>重要决策保留人工确认</span></footer>
   </main>
   <script type="module" src="/assets/app.js"></script>
 </body>
