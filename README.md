@@ -1,5 +1,9 @@
 # 企业AI落地导航 Skill
 
+这是独立的比赛 Skill 包与体验服务仓库，不是 FDE 源码仓库。产品流程是：企业输入问题 → AI 生成落地导航 → 选择最小验证 → 用户自主进入蓝图 FDE：<https://fde.lantuzhigou.com>。
+
+比赛提交材料位于 `artifacts/clawhive-submission/`，只允许使用 TEST_DATA，不得放入客户文件、FDE 生产凭证或 FDE 源码。
+
 安装后，用户可以在 ClawHub/OpenClaw 或 ClawHive 中通过不超过6个动态问题，生成一份可执行的企业AI落地地图。
 
 ## 包内容

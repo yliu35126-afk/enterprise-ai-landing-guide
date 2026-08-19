@@ -1,0 +1,10 @@
+# Local QA/build intermediates; source materials remain tracked.
+.tmp-doc/
+.tmp-presentation/
+service/node_modules/
+service/dist/
+artifacts/clawhive-submission/docx-render*/
+artifacts/clawhive-submission/pdf-render*/
+artifacts/clawhive-submission/企业AI落地导航_比赛提交PPT/
+artifacts/clawhive-submission/*.inspect.ndjson
+artifacts/clawhive-submission/*montage*.png
