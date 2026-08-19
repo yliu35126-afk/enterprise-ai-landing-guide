@@ -5,12 +5,13 @@ import { fileURLToPath } from 'node:url';
 
 const serviceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const packageName = 'enterprise-ai-landing-guide';
+const releaseVersion = '1.2.0';
 const source = resolve(serviceRoot, 'integrations/clawhive', packageName);
 const openApi = resolve(serviceRoot, 'integrations/clawhive/openapi.yaml');
 const openClawRoot = resolve(serviceRoot, 'distribution/openclaw');
 const destination = resolve(openClawRoot, packageName);
 const artifactRoot = resolve(serviceRoot, '../../artifacts/enterprise-ai-landing-guide');
-const zipPath = resolve(artifactRoot, `${packageName}-1.0.0.zip`);
+const zipPath = resolve(artifactRoot, `${packageName}-${releaseVersion}.zip`);
 
 await mkdir(source, { recursive: true });
 await copyFile(openApi, resolve(source, 'openapi.yaml'));

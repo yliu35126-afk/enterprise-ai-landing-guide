@@ -19,14 +19,14 @@
 
 ## 配置
 
-1. 当前生产 API 根地址为 `https://101.37.87.144`，健康检查为 `https://101.37.87.144/api/public/clawhive/v1/health`。
-2. 如需显式配置，将 `ENTERPRISE_AI_LANDING_API_BASE` 设置为 `https://101.37.87.144`；适配器未设置该变量时也使用此生产地址。
+1. 当前生产 API 根地址为 `https://fde.lantuzhigou.com`，健康检查为 `https://fde.lantuzhigou.com/api/public/clawhive/v1/health`。
+2. 如需显式配置，将 `ENTERPRISE_AI_LANDING_API_BASE` 设置为 `https://fde.lantuzhigou.com`；适配器仍保留该变量用于切换到隔离测试或本地服务。
 3. 不需要、也不应把 DeepSeek/OpenAI 密钥、FDE 集成密钥或数据库凭证放入 Skill 包；这些只存在受控服务端。
 
 ## 本地验证
 
 ```bash
-export ENTERPRISE_AI_LANDING_API_BASE=https://101.37.87.144
+export ENTERPRISE_AI_LANDING_API_BASE=https://fde.lantuzhigou.com
 python3 scripts/fde_client.py health
 python3 scripts/fde_client.py create --platform CLAWHUB --external-session-id local-check --mode KNOWN_PROBLEM
 ```
@@ -43,8 +43,8 @@ clawhub skill publish ./enterprise-ai-landing-guide
 
 在 ClawHive 中，按平台后台要求导入 `openapi.yaml`、上传包中文件，再完成人工审核。包内 OpenAPI 已指向当前真实公网 HTTPS 服务。
 
-隐私说明：`https://101.37.87.144/legal/clawhive/privacy`  
-公开 OpenAPI：`https://101.37.87.144/api/public/clawhive/v1/openapi.yaml`
+隐私说明：`https://fde.lantuzhigou.com/legal/clawhive/privacy`
+公开 OpenAPI：`https://fde.lantuzhigou.com/api/public/clawhive/v1/openapi.yaml`
 
 ## 许可
 

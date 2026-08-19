@@ -20,7 +20,7 @@ class LandingGuideApi:
 
     def request(self, method: str, path: str, body: dict[str, Any] | bytes | None = None,
                 token: str = "", idempotency_key: str = "", content_type: str = "application/json") -> dict[str, Any]:
-        headers = {"Accept": "application/json", "User-Agent": "enterprise-ai-landing-guide-dify/1.0.0"}
+        headers = {"Accept": "application/json", "User-Agent": "enterprise-ai-landing-guide-dify/1.2.0"}
         if token:
             headers["Authorization"] = f"Bearer {token}"
         if idempotency_key:
@@ -52,7 +52,7 @@ class LandingGuideApi:
         return self.request("GET", "/health")
 
     def create(self, external_session_id: str, mode: str = "", campaign_code: str = ""):
-        payload = {"sourcePlatform": "DIFY", "sourceVersion": "1.0.0", "externalSessionId": external_session_id}
+        payload = {"sourcePlatform": "DIFY", "sourceVersion": "1.2.0", "externalSessionId": external_session_id}
         if mode:
             payload["mode"] = mode
         if campaign_code:

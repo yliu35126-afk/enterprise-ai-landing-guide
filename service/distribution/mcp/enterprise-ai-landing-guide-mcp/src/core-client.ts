@@ -17,7 +17,7 @@ export class LandingCoreClient {
     token?: string;
     idempotencyKey?: string;
   } = {}) {
-    const headers: Record<string, string> = { Accept: 'application/json', 'User-Agent': 'enterprise-ai-landing-guide-mcp/1.0.0' };
+    const headers: Record<string, string> = { Accept: 'application/json', 'User-Agent': 'enterprise-ai-landing-guide-mcp/1.2.0' };
     if (options.body) headers['Content-Type'] = 'application/json';
     if (options.token) headers.Authorization = `Bearer ${options.token}`;
     if (options.idempotencyKey) headers['Idempotency-Key'] = options.idempotencyKey;

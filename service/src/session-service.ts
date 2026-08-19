@@ -34,7 +34,7 @@ export class ExternalLandingSessionService {
     const sourcePlatform = sanitizeText(input.sourcePlatform || 'CLAWHIVE', 50).toUpperCase();
     const platform = getPlatform(sourcePlatform);
     if (!platform) throw new LandingServiceError('EXT-40010', '来源平台不受支持或尚未启用', 400);
-    const sourceVersion = sanitizeText(input.sourceVersion || '1.0.0', 50);
+    const sourceVersion = sanitizeText(input.sourceVersion || '1.2.0', 50);
     if (!/^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$/.test(sourceVersion)) {
       throw new LandingServiceError('EXT-40011', 'sourceVersion必须使用语义化版本', 400);
     }

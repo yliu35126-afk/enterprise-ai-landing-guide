@@ -15,7 +15,7 @@
 
 匿名会话和临时附件默认最长保留30天（以部署配置为准），用户可在当前会话中主动删除。用户明确授权转换后形成的 FDE 正式业务数据，遵循 FDE 已有保留、权限和审计规则。
 
-公开隐私说明：`https://101.37.87.144/legal/clawhive/privacy`。删除匿名会话使用当前会话 Token 调用 `DELETE /api/public/clawhive/v1/sessions/{id}`。
+公开隐私说明：`https://fde.lantuzhigou.com/legal/clawhive/privacy`。删除匿名会话使用当前会话 Token 调用 `DELETE /api/public/clawhive/v1/sessions/{id}`。
 
 ## 安全提示
 

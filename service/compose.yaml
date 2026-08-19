@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: enterprise-ai-landing-guide:1.0.0
+    image: enterprise-ai-landing-guide:1.2.0
     restart: unless-stopped
     init: true
     ports:
@@ -48,4 +48,3 @@ services:
 
 volumes:
   enterprise-ai-landing-data:
-

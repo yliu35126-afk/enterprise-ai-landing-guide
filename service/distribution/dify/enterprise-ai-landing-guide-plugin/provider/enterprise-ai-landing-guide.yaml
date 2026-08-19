@@ -16,12 +16,12 @@ credentials_schema:
       en_US: Public API base URL
       zh_Hans: 公开API根地址
     placeholder:
-      en_US: https://ai.example.com
-      zh_Hans: https://ai.example.com
+      en_US: https://fde.lantuzhigou.com
+      zh_Hans: https://fde.lantuzhigou.com
     help:
       en_US: HTTPS root URL only. Do not enter an FDE key or AI provider key.
       zh_Hans: 只填HTTPS根地址，不要填FDE密钥或AI供应商密钥。
-    url: https://example.com/legal/clawhive/privacy
+    url: https://fde.lantuzhigou.com/legal/clawhive/privacy
 tools:
   - tools/create_ai_landing_session.yaml
   - tools/answer_ai_landing_question.yaml

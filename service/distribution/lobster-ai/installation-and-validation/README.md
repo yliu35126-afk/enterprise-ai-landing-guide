@@ -8,7 +8,7 @@
 
 ```text
 sourcePlatform = LOBSTER_AI
-sourceVersion = 1.0.0
+sourceVersion = 1.2.0
 ```
 
 不需要、也不得将 FDE 内部密钥、AI 供应商密钥或数据库凭证配置到龙虾。

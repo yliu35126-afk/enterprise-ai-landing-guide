@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PUBLIC_IP="${PUBLIC_IP:-101.37.87.144}"
+PUBLIC_DOMAIN="${PUBLIC_DOMAIN:-fde.lantuzhigou.com}"
 UPSTREAM="${UPSTREAM:-127.0.0.1:3020}"
 NGINX_CONFIG="${NGINX_CONFIG:-/etc/nginx/conf.d/enterprise-ai-landing-guide-ip.conf}"
 CERTBOT_IMAGE="${CERTBOT_IMAGE:-certbot/certbot:latest}"
-CERT_ROOT="/etc/letsencrypt/live/$PUBLIC_IP"
+CERT_ROOT="/etc/letsencrypt/live/$PUBLIC_DOMAIN"
 WEBROOT="/var/www/certbot"
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -21,7 +21,7 @@ limit_req_zone \$binary_remote_addr zone=enterprise_ai_landing_rate:10m rate=1r/
 server {
     listen 80;
     listen [::]:80;
-    server_name $PUBLIC_IP;
+    server_name $PUBLIC_DOMAIN;
 
     location ^~ /.well-known/acme-challenge/ {
         root $WEBROOT;
@@ -50,7 +50,7 @@ docker run --rm \
   --preferred-profile shortlived \
   --webroot \
   --webroot-path "$WEBROOT" \
-  --ip-address "$PUBLIC_IP"
+  -d "$PUBLIC_DOMAIN"
 
 test -s "$CERT_ROOT/fullchain.pem"
 test -s "$CERT_ROOT/privkey.pem"
@@ -61,7 +61,7 @@ limit_req_zone \$binary_remote_addr zone=enterprise_ai_landing_rate:10m rate=1r/
 server {
     listen 80;
     listen [::]:80;
-    server_name $PUBLIC_IP;
+    server_name $PUBLIC_DOMAIN;
 
     location ^~ /.well-known/acme-challenge/ {
         root $WEBROOT;
@@ -77,7 +77,7 @@ server {
 server {
     listen 443 ssl;
     listen [::]:443 ssl;
-    server_name $PUBLIC_IP;
+    server_name $PUBLIC_DOMAIN;
 
     ssl_certificate $CERT_ROOT/fullchain.pem;
     ssl_certificate_key $CERT_ROOT/privkey.pem;
@@ -138,9 +138,9 @@ EOF
 nginx -t
 systemctl reload nginx
 
-cat > /etc/systemd/system/certbot-ip-renew.service <<EOF
+cat > /etc/systemd/system/certbot-domain-renew.service <<EOF
 [Unit]
-Description=Renew short-lived Let's Encrypt IP certificate
+Description=Renew Let's Encrypt HTTPS certificate
 After=docker.service nginx.service network-online.target
 Requires=docker.service
 
@@ -151,9 +151,9 @@ ExecStartPost=/usr/sbin/nginx -t
 ExecStartPost=/usr/bin/systemctl reload nginx
 EOF
 
-cat > /etc/systemd/system/certbot-ip-renew.timer <<'EOF'
+cat > /etc/systemd/system/certbot-domain-renew.timer <<'EOF'
 [Unit]
-Description=Check the short-lived IP certificate twice daily
+Description=Check the HTTPS certificate twice daily
 
 [Timer]
 OnCalendar=*-*-* 03,15:17:00
@@ -165,9 +165,9 @@ WantedBy=timers.target
 EOF
 
 systemctl daemon-reload
-systemctl enable --now certbot-ip-renew.timer
-systemctl start certbot-ip-renew.service
+systemctl enable --now certbot-domain-renew.timer
+systemctl start certbot-domain-renew.service
 
-curl -fsS "https://$PUBLIC_IP/api/public/clawhive/v1/health" >/dev/null
-echo "HTTPS configured: https://$PUBLIC_IP/api/public/clawhive/v1"
-systemctl list-timers certbot-ip-renew.timer --no-pager
+curl -fsS "https://$PUBLIC_DOMAIN/api/public/clawhive/v1/health" >/dev/null
+echo "HTTPS configured: https://$PUBLIC_DOMAIN/api/public/clawhive/v1"
+systemctl list-timers certbot-domain-renew.timer --no-pager

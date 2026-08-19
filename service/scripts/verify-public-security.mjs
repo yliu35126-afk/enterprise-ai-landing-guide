@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
-const baseUrl = (process.env.PUBLIC_BASE_URL || 'https://101.37.87.144').replace(/\/$/, '');
+const baseUrl = (process.env.PUBLIC_BASE_URL || 'https://fde.lantuzhigou.com').replace(/\/$/, '');
 const prefix = '/api/public/clawhive/v1';
 const reportPath = resolve(process.env.REPORT_PATH || '../../artifacts/enterprise-ai-landing-guide/public-deployment-security-20260807.json');
 
@@ -18,7 +18,7 @@ async function createSession(code) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      sourcePlatform: 'CLAWHIVE', sourceVersion: '1.0.0',
+      sourcePlatform: 'CLAWHIVE', sourceVersion: '1.2.0',
       externalSessionId: `public-security-${code}-${Date.now()}`,
       campaignCode: `P1_PUBLIC_SECURITY_${code}_20260807`, mode: 'KNOWN_PROBLEM',
     }),

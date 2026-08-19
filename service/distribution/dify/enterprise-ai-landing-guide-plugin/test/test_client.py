@@ -57,7 +57,7 @@ class LandingGuideClientTest(unittest.TestCase):
     def test_create_forces_dify_attribution(self):
         self.client.create("dify-conversation-1", "KNOWN_PROBLEM", "DIFY_TEST")
         self.assertEqual(Handler.last_request["body"]["sourcePlatform"], "DIFY")
-        self.assertEqual(Handler.last_request["body"]["sourceVersion"], "1.0.0")
+        self.assertEqual(Handler.last_request["body"]["sourceVersion"], "1.2.0")
         self.assertIsNone(Handler.last_request["authorization"])
 
     def test_error_is_readable_without_internal_stack(self):

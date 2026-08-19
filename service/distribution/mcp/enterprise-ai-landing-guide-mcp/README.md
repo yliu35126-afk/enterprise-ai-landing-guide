@@ -8,7 +8,7 @@
 npm install
 npm run build
 NODE_ENV=production \
-ENTERPRISE_AI_LANDING_API_BASE=https://ai.example.com \
+ENTERPRISE_AI_LANDING_API_BASE=https://fde.lantuzhigou.com \
 MCP_ACCESS_TOKEN='<32字符以上的远程访问Token>' \
 MCP_ALLOWED_HOSTS='mcp.example.com' \
 MCP_ALLOWED_ORIGINS='chatgpt.com,smithery.ai' \

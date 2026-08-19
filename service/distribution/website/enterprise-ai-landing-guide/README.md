@@ -9,12 +9,12 @@
 
 ## 嵌入
 
-把 `embed.html` 中的 `https://ai.example.com` 替换为真实域名，然后放入官网页面。建议优先使用独立链接，嵌入时需要核对 CSP 和同域隐私配置。
+`embed.html` 已指向 `https://fde.lantuzhigou.com`，可直接放入官网页面。嵌入时仍需核对 CSP 和同域隐私配置。
 
 ## 生成分享链接
 
 ```bash
-node share-link.mjs https://ai.example.com Q3_MANUFACTURING
+node share-link.mjs https://fde.lantuzhigou.com Q3_MANUFACTURING
 ```
 
 输出链接只包含 `campaignCode`，不包含 Token、联系信息或 FDE 字段。

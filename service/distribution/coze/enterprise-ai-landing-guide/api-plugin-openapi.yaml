@@ -1,11 +1,11 @@
 openapi: 3.0.3
 info:
   title: Coze Enterprise AI Landing Guide API
-  version: 1.0.0
+  version: 1.2.0
   description: COZE 轻量适配契约。只调用统一公开API，不暴露FDE内部接口。
 servers:
-  - url: https://api.example.com
-    description: 通过EXTERNAL_PUBLIC_BASE_URL替换为实际HTTPS域名
+  - url: https://fde.lantuzhigou.com
+    description: 蓝图FDE企业AI落地导航公网HTTPS服务
 tags:
   - name: LandingGuide
 paths:

@@ -74,7 +74,7 @@ async function runSession(index, group) {
     created = await request('/sessions', {
       method: 'POST', phase: 'create-session',
       body: {
-        sourcePlatform: 'FDE_WEBSITE', sourceVersion: '1.0.0', externalSessionId,
+        sourcePlatform: 'FDE_WEBSITE', sourceVersion: '1.2.0', externalSessionId,
         campaignCode: 'RESOURCE_BENCHMARK_20260807', mode: 'KNOWN_PROBLEM',
       },
     });

@@ -27,7 +27,7 @@ function errorResult(error: unknown) {
 }
 
 export function createLandingMcpServer(client = new LandingCoreClient()) {
-  const server = new McpServer({ name: 'enterprise-ai-landing-guide-mcp', version: '1.0.0' }, { capabilities: { tools: {} } });
+  const server = new McpServer({ name: 'enterprise-ai-landing-guide-mcp', version: '1.2.0' }, { capabilities: { tools: {} } });
 
   server.registerTool('start_ai_landing_session', {
     title: '开始企业AI落地导航',

@@ -41,7 +41,7 @@ class LandingGuideClient:
         content_type: str = "application/json",
     ) -> dict[str, Any]:
         url = f"{self.base_url}{self.prefix}{path}"
-        headers = {"Accept": "application/json", "User-Agent": "enterprise-ai-landing-guide-skill/1.0.0"}
+        headers = {"Accept": "application/json", "User-Agent": "enterprise-ai-landing-guide-skill/1.2.0"}
         if token:
             headers["Authorization"] = f"Bearer {token}"
         if idempotency_key:
@@ -142,14 +142,14 @@ def idempotency(value: str | None) -> str:
 
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(description="Enterprise AI Landing Guide API client")
-    root.add_argument("--base-url", default=os.environ.get("ENTERPRISE_AI_LANDING_API_BASE", "https://101.37.87.144"))
+    root.add_argument("--base-url", default=os.environ.get("ENTERPRISE_AI_LANDING_API_BASE", "https://fde.lantuzhigou.com"))
     root.add_argument("--timeout", type=float, default=35.0)
     commands = root.add_subparsers(dest="command", required=True)
     commands.add_parser("health")
 
     create = commands.add_parser("create")
     create.add_argument("--platform", required=True)
-    create.add_argument("--version", default="1.0.0")
+    create.add_argument("--version", default="1.2.0")
     create.add_argument("--external-session-id", required=True)
     create.add_argument("--mode", choices=["KNOWN_PROBLEM", "OPPORTUNITY_SCAN"])
     create.add_argument("--campaign")

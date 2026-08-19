@@ -4,7 +4,7 @@
 |---|---|---|
 | `conversation_id` | `externalSessionId` | 稳定不敏感对话ID |
 | 固定值 | `sourcePlatform` | `COZE` |
-| 固定值 | `sourceVersion` | `1.0.0` |
+| 固定值 | `sourceVersion` | `1.2.0` |
 | `session_id` | 路径 `{id}` | 创建会话响应 |
 | `session_token` | `X-Session-Token` | 短期变量，不写日志 |
 | `current_answer` | `message` | 当轮用户原话 |

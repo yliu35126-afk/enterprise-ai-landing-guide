@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
-const baseUrl = (process.env.PUBLIC_BASE_URL || 'https://101.37.87.144').replace(/\/$/, '');
+const baseUrl = (process.env.PUBLIC_BASE_URL || 'https://fde.lantuzhigou.com').replace(/\/$/, '');
 const prefix = '/api/public/clawhive/v1';
 const reportPath = resolve(process.env.REPORT_PATH || '../../artifacts/enterprise-ai-landing-guide/public-deployment-samples-20260807.json');
 
@@ -54,7 +54,7 @@ for (const sample of samples) {
     method: 'POST',
     body: {
       sourcePlatform: 'CLAWHIVE',
-      sourceVersion: '1.0.0',
+      sourceVersion: '1.2.0',
       externalSessionId: `public-${sample.code}-${Date.now()}`,
       campaignCode: sample.campaignCode,
       mode: 'KNOWN_PROBLEM',

@@ -2,8 +2,8 @@
 name: enterprise-ai-landing-guide
 description: 用不超过6个动态问题，帮企业找到一个可在7天内验证的AI优先场景，并在用户分别授权后申请蓝图FDE人工复核。
 allowed-tools: Bash(python3:*)
-version: 1.0.0
-homepage: https://101.37.87.144/enterprise-ai-landing-guide
+version: 1.2.0
+homepage: https://fde.lantuzhigou.com/enterprise-ai-landing-guide
 metadata:
   openclaw:
     primaryEnv: ENTERPRISE_AI_LANDING_API_BASE

@@ -1,6 +1,6 @@
 [project]
 name = "enterprise-ai-landing-guide"
-version = "1.0.0"
+version = "1.2.0"
 requires-python = ">=3.12"
 dependencies = [
   "dify-plugin>=0.9.0,<0.10.0"
