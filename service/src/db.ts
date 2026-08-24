@@ -9,6 +9,7 @@ export interface ExternalSessionRow {
   source_platform: string;
   source_app: string;
   source_version: string;
+  data_classification: 'BUSINESS' | 'TEST_DATA';
   external_session_id: string;
   external_user_id: string | null;
   campaign_code: string | null;
@@ -49,6 +50,11 @@ export interface ExternalSessionRow {
   converted_task_id: string | null;
   converted_at: string | null;
   conversion_idempotency_key: string | null;
+  conversion_status: string | null;
+  pending_attribution_id: string | null;
+  pending_visit_id: string | null;
+  pending_task_id: string | null;
+  pending_action_id: string | null;
   session_token_hash: string;
   expires_at: string;
   message_count: number;
@@ -104,6 +110,7 @@ export class LandingDatabase {
         source_platform TEXT NOT NULL,
         source_app TEXT NOT NULL,
         source_version TEXT NOT NULL,
+        data_classification TEXT NOT NULL DEFAULT 'BUSINESS' CHECK (data_classification IN ('BUSINESS', 'TEST_DATA')),
         external_session_id TEXT NOT NULL,
         external_user_id TEXT,
         campaign_code TEXT,
@@ -144,6 +151,11 @@ export class LandingDatabase {
         converted_task_id TEXT,
         converted_at TEXT,
         conversion_idempotency_key TEXT UNIQUE,
+        conversion_status TEXT,
+        pending_attribution_id TEXT,
+        pending_visit_id TEXT,
+        pending_task_id TEXT,
+        pending_action_id TEXT,
         session_token_hash TEXT NOT NULL,
         expires_at TEXT NOT NULL,
         message_count INTEGER NOT NULL DEFAULT 0,
@@ -206,6 +218,21 @@ export class LandingDatabase {
       CREATE INDEX IF NOT EXISTS external_skill_session_retention_idx
       ON external_skill_session(retention_expires_at, deleted_at);
     `);
+    // Existing production SQLite files predate the classification/pending columns.
+    // ALTER is additive only; no existing rows are removed or rewritten.
+    const columns = this.raw.prepare('PRAGMA table_info(external_skill_session)').all() as Array<{ name: string }>;
+    const names = new Set(columns.map((column) => column.name));
+    for (const statement of [
+      !names.has('data_classification') ? "ALTER TABLE external_skill_session ADD COLUMN data_classification TEXT NOT NULL DEFAULT 'BUSINESS'" : null,
+      !names.has('conversion_status') ? 'ALTER TABLE external_skill_session ADD COLUMN conversion_status TEXT' : null,
+      !names.has('pending_attribution_id') ? 'ALTER TABLE external_skill_session ADD COLUMN pending_attribution_id TEXT' : null,
+      !names.has('pending_visit_id') ? 'ALTER TABLE external_skill_session ADD COLUMN pending_visit_id TEXT' : null,
+      !names.has('pending_task_id') ? 'ALTER TABLE external_skill_session ADD COLUMN pending_task_id TEXT' : null,
+      !names.has('pending_action_id') ? 'ALTER TABLE external_skill_session ADD COLUMN pending_action_id TEXT' : null,
+    ]) {
+      if (statement) this.raw.exec(statement);
+    }
+    this.raw.exec('CREATE INDEX IF NOT EXISTS external_skill_session_classification_idx ON external_skill_session(data_classification, created_at);');
   }
 }
 

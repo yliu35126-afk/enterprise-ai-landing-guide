@@ -109,6 +109,17 @@ server {
         proxy_set_header X-Forwarded-Proto https;
     }
 
+    location ^~ /api/public/fde-website/v1/ {
+        limit_req zone=enterprise_ai_landing_rate burst=60 nodelay;
+        limit_req_status 429;
+        proxy_pass http://$UPSTREAM;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+    }
+
     location = /enterprise-ai-landing-guide {
         proxy_pass http://$UPSTREAM;
         proxy_http_version 1.1;
@@ -169,5 +180,6 @@ systemctl enable --now certbot-domain-renew.timer
 systemctl start certbot-domain-renew.service
 
 curl -fsS "https://$PUBLIC_DOMAIN/api/public/clawhive/v1/health" >/dev/null
+curl -fsS "https://$PUBLIC_DOMAIN/api/public/fde-website/v1/health" >/dev/null
 echo "HTTPS configured: https://$PUBLIC_DOMAIN/api/public/clawhive/v1"
 systemctl list-timers certbot-domain-renew.timer --no-pager

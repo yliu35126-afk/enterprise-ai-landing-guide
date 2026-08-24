@@ -8,6 +8,7 @@ import { enforceEvidencePolicy, landingMapMarkdown, validateLandingMap } from '.
 import { decryptSensitive, encryptSensitive, randomToken, sanitizeText, secureEqual, sha256 } from './security.js';
 
 const SOURCE_APP = 'enterprise-ai-landing-guide';
+const DATA_CLASSIFICATIONS = ['BUSINESS', 'TEST_DATA'] as const;
 const CONSENT_VERSION = '2026-08-06-v1';
 const ENTRY_MODES = [
   { code: 'KNOWN_PROBLEM', name: '我已经有明确问题' },
@@ -34,9 +35,13 @@ export class ExternalLandingSessionService {
     const sourcePlatform = sanitizeText(input.sourcePlatform || 'CLAWHIVE', 50).toUpperCase();
     const platform = getPlatform(sourcePlatform);
     if (!platform) throw new LandingServiceError('EXT-40010', '来源平台不受支持或尚未启用', 400);
-    const sourceVersion = sanitizeText(input.sourceVersion || '1.2.2', 50);
+    const sourceVersion = sanitizeText(input.sourceVersion || '1.3.1', 50);
     if (!/^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$/.test(sourceVersion)) {
       throw new LandingServiceError('EXT-40011', 'sourceVersion必须使用语义化版本', 400);
+    }
+    const dataClassification = String(input.dataClassification || 'BUSINESS').trim().toUpperCase();
+    if (!DATA_CLASSIFICATIONS.includes(dataClassification as (typeof DATA_CLASSIFICATIONS)[number])) {
+      throw new LandingServiceError('EXT-40013', 'dataClassification只能是BUSINESS或TEST_DATA', 400);
     }
     const id = randomUUID();
     const token = randomToken();
@@ -49,10 +54,11 @@ export class ExternalLandingSessionService {
       this.db.raw.prepare(`
         INSERT INTO external_skill_session (
           id, tenant_scope, source_channel, source_platform, source_app, source_version,
+          data_classification,
           external_session_id, external_user_id, campaign_code, referrer, entry_url, installation_id,
           first_touch_at, mode, stage, conversation_state, retention_expires_at,
           session_token_hash, expires_at, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', ?, ?, ?, ?, ?)
       `).run(
         id,
         config.fdeEnterpriseId || 'UNCONFIGURED',
@@ -60,6 +66,7 @@ export class ExternalLandingSessionService {
         sourcePlatform,
         SOURCE_APP,
         sourceVersion,
+        dataClassification,
         externalSessionId,
         nullable(input.externalUserId, 128),
         nullable(input.campaignCode, 100),
@@ -87,6 +94,7 @@ export class ExternalLandingSessionService {
       expiresAt: expiresAt.toISOString(),
       currentStage: mode ? 'COLLECTING' : 'AWAITING_MODE',
       entryModes: ENTRY_MODES,
+      dataClassification,
       source: { sourceChannel: platform.sourceChannel, sourcePlatform, sourceApp: SOURCE_APP, sourceVersion },
     };
   }
@@ -362,7 +370,7 @@ export class ExternalLandingSessionService {
 
   async convert(id: string, token: string, idempotencyKey: string) {
     let session = this.authenticate(id, token);
-    if (session.converted_opportunity_id) return this.conversionFromSession(session, true);
+    if (session.converted_opportunity_id || session.conversion_status === 'PENDING_CONFIRMATION') return this.conversionFromSession(session, true);
     if (!session.result_json || !session.map_completed_at) throw new LandingServiceError('EXT-40060', '尚未生成企业AI落地地图', 400);
     if (!session.consent_to_store || !session.consent_timestamp || !session.company_name) {
       throw new LandingServiceError('EXT-40061', '尚未明确同意保存并申请人工复核', 400);
@@ -380,6 +388,7 @@ export class ExternalLandingSessionService {
       sourcePlatform: session.source_platform,
       sourceApp: session.source_app,
       sourceVersion: session.source_version,
+      dataClassification: session.data_classification,
       externalSessionId: session.external_session_id,
       externalUserId: session.external_user_id,
       campaignCode: session.campaign_code,
@@ -422,25 +431,36 @@ export class ExternalLandingSessionService {
       throw new LandingServiceError(body?.code || 'EXT-50260', sanitizeText(body?.message || 'FDE转换失败，请稍后重试', 300), response.status >= 500 ? 502 : response.status);
     }
     const converted = body?.data || body;
-    if (!converted?.customerId || !converted?.opportunityId || !converted?.visitId || !converted?.taskId) {
+    const conversionStatus = String(converted?.conversionStatus || 'CONVERTED').toUpperCase();
+    const pending = conversionStatus === 'PENDING_CONFIRMATION';
+    if (pending) {
+      if (!converted?.attributionId || !converted?.visitId || !converted?.taskId || !converted?.pendingActionId) {
+        throw new LandingServiceError('EXT-50261', 'FDE待确认结果不完整，请稍后重试', 502);
+      }
+    } else if (!converted?.customerId || !converted?.opportunityId || !converted?.visitId || !converted?.taskId) {
       throw new LandingServiceError('EXT-50261', 'FDE转换结果不完整，请稍后重试', 502);
     }
     const now = new Date().toISOString();
     const result = {
-      conversionStatus: converted.conversionStatus || 'CONVERTED',
-      customerId: converted.customerId,
+      conversionStatus: pending ? 'PENDING_CONFIRMATION' : 'CONVERTED',
+      customerId: converted.customerId || null,
       contactId: converted.contactId || null,
-      opportunityId: converted.opportunityId,
+      opportunityId: converted.opportunityId || null,
       visitId: converted.visitId,
       taskId: converted.taskId,
       attributionId: converted.attributionId,
       source: converted.source,
+      pendingActionId: converted.pendingActionId || null,
     };
     this.db.transaction(() => {
       this.db.raw.prepare(`
-        UPDATE external_skill_session SET request_human_review=1, stage='CONVERTED', converted_customer_id=?, converted_contact_id=?,
-          converted_opportunity_id=?, converted_visit_id=?, converted_task_id=?, converted_at=?, conversion_idempotency_key=?, updated_at=? WHERE id=?
-      `).run(result.customerId, result.contactId, result.opportunityId, result.visitId, result.taskId, now, requestKey, now, id);
+        UPDATE external_skill_session SET request_human_review=1, stage=?, conversion_status=?, converted_customer_id=?, converted_contact_id=?,
+          converted_opportunity_id=?, converted_visit_id=?, converted_task_id=?, pending_attribution_id=?, pending_visit_id=?, pending_task_id=?, pending_action_id=?,
+          converted_at=?, conversion_idempotency_key=?, updated_at=? WHERE id=?
+      `).run(pending ? 'PENDING_CONFIRMATION' : 'CONVERTED', conversionStatus,
+        pending ? null : result.customerId, pending ? null : result.contactId, pending ? null : result.opportunityId, pending ? null : result.visitId, pending ? null : result.taskId,
+        converted.attributionId || null, pending ? converted.visitId : null, pending ? converted.taskId : null, converted.pendingActionId || null,
+        pending ? null : now, requestKey, now, id);
       this.storeResponse(id, 'convert', requestKey, { consentTimestamp: session.consent_timestamp }, result, 200);
     });
     session = this.db.session(id)!;
@@ -486,6 +506,12 @@ export class ExternalLandingSessionService {
     ]) {
       if (value) { clauses.push(`${column} = ?`); values.push(sanitizeText(value, 100)); }
     }
+    const classification = String(filters.dataClassification || 'BUSINESS').trim().toUpperCase();
+    if (!DATA_CLASSIFICATIONS.includes(classification as (typeof DATA_CLASSIFICATIONS)[number])) {
+      throw new LandingServiceError('EXT-40014', 'dataClassification只能是BUSINESS或TEST_DATA', 400);
+    }
+    clauses.push('data_classification = ?');
+    values.push(classification);
     if (filters.primaryScenario) {
       clauses.push(`json_extract(result_json, '$.primaryScenario.name') = ?`);
       values.push(sanitizeText(filters.primaryScenario, 200));
@@ -624,10 +650,11 @@ export class ExternalLandingSessionService {
 
   private conversionFromSession(session: ExternalSessionRow, duplicate: boolean, attributionId?: string, source?: unknown) {
     return {
-      conversionStatus: duplicate ? 'ALREADY_CONVERTED' : 'CONVERTED', duplicate,
-      attributionId: attributionId || null,
+      conversionStatus: session.conversion_status === 'PENDING_CONFIRMATION' ? 'PENDING_CONFIRMATION' : (duplicate ? 'ALREADY_CONVERTED' : 'CONVERTED'), duplicate,
+      attributionId: attributionId || session.pending_attribution_id || null,
       customerId: session.converted_customer_id, contactId: session.converted_contact_id,
-      opportunityId: session.converted_opportunity_id, visitId: session.converted_visit_id, taskId: session.converted_task_id,
+      opportunityId: session.converted_opportunity_id, visitId: session.converted_visit_id || session.pending_visit_id, taskId: session.converted_task_id || session.pending_task_id,
+      pendingActionId: session.pending_action_id,
       source: source || { sourceChannel: session.source_channel, sourcePlatform: session.source_platform, sourceApp: session.source_app, sourceVersion: session.source_version, externalSessionId: session.external_session_id, campaignCode: session.campaign_code },
     };
   }

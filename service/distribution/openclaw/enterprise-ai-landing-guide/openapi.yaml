@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Enterprise AI Landing Guide Public API
-  version: 1.2.2
+  version: 1.3.1
   description: >-
     企业AI落地导航公共API。匿名会话先生成地图，用户分别授权保存和联系后，
     才可请求FDE人工复核。本API不暴露FDE内部管理路由。
@@ -244,6 +244,11 @@ components:
       properties:
         sourcePlatform: { $ref: '#/components/schemas/SourcePlatform' }
         sourceVersion: { type: string, pattern: '^\\d+\\.\\d+\\.\\d+(?:[-+][A-Za-z0-9.-]+)?$' }
+        dataClassification:
+          type: string
+          enum: [BUSINESS, TEST_DATA]
+          default: BUSINESS
+          description: TEST_DATA仅供内部回归使用；未传时按业务数据统计。
         externalSessionId: { type: string, minLength: 1, maxLength: 128 }
         externalUserId: { type: string, maxLength: 128 }
         campaignCode: { type: string, maxLength: 100 }
@@ -253,7 +258,7 @@ components:
         mode: { $ref: '#/components/schemas/EntryMode' }
     CreateSessionResponse:
       type: object
-      required: [sessionId, sessionToken, expiresAt, currentStage, entryModes, source]
+      required: [sessionId, sessionToken, expiresAt, currentStage, entryModes, dataClassification, source]
       properties:
         sessionId: { type: string, format: uuid }
         sessionToken: { type: string, writeOnly: true }
@@ -267,6 +272,7 @@ components:
             properties:
               code: { $ref: '#/components/schemas/EntryMode' }
               name: { type: string }
+        dataClassification: { type: string, enum: [BUSINESS, TEST_DATA] }
         source: { $ref: '#/components/schemas/SourceAttribution' }
     SourceAttribution:
       type: object
@@ -333,14 +339,15 @@ components:
       type: object
       required: [conversionStatus, duplicate, customerId, opportunityId, visitId, taskId, source]
       properties:
-        conversionStatus: { type: string, enum: [CONVERTED, ALREADY_CONVERTED] }
+        conversionStatus: { type: string, enum: [PENDING_CONFIRMATION, CONVERTED, ALREADY_CONVERTED] }
         duplicate: { type: boolean }
         attributionId: { type: string, format: uuid, nullable: true }
-        customerId: { type: string, format: uuid }
+        customerId: { type: string, format: uuid, nullable: true }
         contactId: { type: string, format: uuid, nullable: true }
-        opportunityId: { type: string, format: uuid }
+        opportunityId: { type: string, format: uuid, nullable: true }
         visitId: { type: string, format: uuid }
         taskId: { type: string, format: uuid }
+        pendingActionId: { type: string, format: uuid, nullable: true }
         source: { $ref: '#/components/schemas/SourceAttribution' }
     LandingMap:
       type: object

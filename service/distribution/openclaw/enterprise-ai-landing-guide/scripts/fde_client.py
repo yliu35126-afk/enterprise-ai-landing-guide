@@ -41,7 +41,7 @@ class LandingGuideClient:
         content_type: str = "application/json",
     ) -> dict[str, Any]:
         url = f"{self.base_url}{self.prefix}{path}"
-        headers = {"Accept": "application/json", "User-Agent": "enterprise-ai-landing-guide-skill/1.2.2"}
+        headers = {"Accept": "application/json", "User-Agent": "enterprise-ai-landing-guide-skill/1.3.1"}
         if token:
             headers["Authorization"] = f"Bearer {token}"
         if idempotency_key:
@@ -148,13 +148,14 @@ def parser() -> argparse.ArgumentParser:
     commands.add_parser("health")
 
     create = commands.add_parser("create")
-    create.add_argument("--platform", required=True)
-    create.add_argument("--version", default="1.2.2")
+    create.add_argument("--platform", default="CLAWHIVE", help=argparse.SUPPRESS)
+    create.add_argument("--version", default="1.3.1")
     create.add_argument("--external-session-id", required=True)
     create.add_argument("--mode", choices=["KNOWN_PROBLEM", "OPPORTUNITY_SCAN"])
     create.add_argument("--campaign")
     create.add_argument("--referrer")
     create.add_argument("--entry-url")
+    create.add_argument("--test-data", action="store_true", help="仅内部回归测试：将会话标记为TEST_DATA")
 
     for name in ("message", "upload", "generate", "map", "consent", "convert", "delete"):
         command = commands.add_parser(name)
@@ -182,10 +183,12 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         return client.health()
     if args.command == "create":
         payload = {
-            "sourcePlatform": args.platform,
+            "sourcePlatform": "CLAWHIVE",
             "sourceVersion": args.version,
             "externalSessionId": args.external_session_id,
         }
+        if args.test_data:
+            payload["dataClassification"] = "TEST_DATA"
         for key, value in (("mode", args.mode), ("campaignCode", args.campaign), ("referrer", args.referrer), ("entryUrl", args.entry_url)):
             if value:
                 payload[key] = value

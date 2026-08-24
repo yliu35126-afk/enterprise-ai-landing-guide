@@ -91,6 +91,16 @@ describe('ExternalLandingSessionService', () => {
     assert.equal(row.source_app, 'enterprise-ai-landing-guide');
   });
 
+  it('会话数据分类默认为BUSINESS且TEST_DATA必须显式声明', () => {
+    const business = service.createSession({ sourcePlatform: 'CLAWHIVE', sourceVersion: '1.0.0' });
+    const testData = service.createSession({ sourcePlatform: 'CLAWHIVE', sourceVersion: '1.0.0', dataClassification: 'TEST_DATA' });
+    assert.equal(business.dataClassification, 'BUSINESS');
+    assert.equal(db.session(business.sessionId)?.data_classification, 'BUSINESS');
+    assert.equal(testData.dataClassification, 'TEST_DATA');
+    assert.equal(db.session(testData.sessionId)?.data_classification, 'TEST_DATA');
+    assert.throws(() => service.createSession({ sourcePlatform: 'CLAWHIVE', sourceVersion: '1.0.0', dataClassification: 'test' }), LandingServiceError);
+  });
+
   it('拒绝未启用的平台来源', () => {
     assert.throws(() => service.createSession({ sourcePlatform: 'FAKE', sourceVersion: '1.0.0' }), LandingServiceError);
   });
@@ -253,6 +263,16 @@ describe('ExternalLandingSessionService', () => {
     const stats = service.statistics({ tenantScope: 'tenant-test' });
     assert.equal(stats.rows.length, 2);
     assert.deepEqual(new Set(stats.rows.map((row) => row.sourcePlatform)), new Set(['CLAWHUB', 'COZE']));
+  });
+
+  it('默认业务统计排除TEST_DATA，显式查询才包含测试数据', () => {
+    create('CLAWHUB');
+    const testData = service.createSession({ sourcePlatform: 'CLAWHIVE', sourceVersion: '1.0.0', dataClassification: 'TEST_DATA' });
+    const business = service.statistics({ tenantScope: 'tenant-test' });
+    const testStats = service.statistics({ tenantScope: 'tenant-test', dataClassification: 'TEST_DATA' });
+    assert.equal(business.rows.reduce((sum, row) => sum + Number(row.sessionCount), 0), 1);
+    assert.equal(testStats.rows.reduce((sum, row) => sum + Number(row.sessionCount), 0), 1);
+    assert.equal(db.session(testData.sessionId)?.data_classification, 'TEST_DATA');
   });
 
   it('内部统计拒绝缺失或错误tenantScope', () => {

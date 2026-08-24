@@ -50,8 +50,9 @@ describe('Platform adapters', () => {
   it('网站来源固定为FDE_WEBSITE且URL只接收campaignCode', () => {
     const app = read('public/app.js');
     const config = JSON.parse(read('distribution/website/enterprise-ai-landing-guide/integration-config.json'));
-    assert.match(app, /const sourcePlatform='FDE_WEBSITE'/);
+    assert.match(app, /const api = '\/api\/public\/fde-website\/v1'/);
     assert.equal(app.includes("get('sourcePlatform')"), false);
+    assert.equal(app.includes('sourcePlatform'), false);
     assert.deepEqual(config.allowedQueryParameters, ['campaignCode']);
   });
 

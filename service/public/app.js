@@ -1,4 +1,4 @@
-const api = '/api/public/clawhive/v1';
+const api = '/api/public/fde-website/v1';
 const $ = (id) => document.getElementById(id);
 let sessionId = '';
 let sessionToken = '';
@@ -56,9 +56,8 @@ document.querySelectorAll('[data-mode]').forEach((button) => button.addEventList
   document.querySelectorAll('[data-mode]').forEach((item) => { item.disabled = true; });
   try {
     mode = button.dataset.mode;
-    const sourcePlatform='FDE_WEBSITE';
     const campaignCode = new URLSearchParams(location.search).get('campaignCode') || undefined;
-    const result = await request('/sessions', { method: 'POST', body: JSON.stringify({ mode, sourcePlatform, sourceVersion: '1.2.2', campaignCode, entryUrl: location.href, referrer: document.referrer || undefined }) });
+    const result = await request('/sessions', { method: 'POST', body: JSON.stringify({ mode, sourceVersion: '1.3.1', campaignCode, entryUrl: location.href, referrer: document.referrer || undefined }) });
     sessionId = result.sessionId;
     sessionToken = result.sessionToken;
     hide('start');

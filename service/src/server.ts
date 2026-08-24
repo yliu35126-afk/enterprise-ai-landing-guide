@@ -60,54 +60,60 @@ export function buildApp(options: { databasePath?: string; service?: ExternalLan
     reply.status(statusCode).send({ code, message, requestId: request.id, timestamp: new Date().toISOString(), data: null });
   });
 
-  const prefix = '/api/public/clawhive/v1';
+  const registerPublicRoutes = (prefix: string, fixedSourcePlatform: string, includeOpenApi = false) => {
+    app.get(`${prefix}/health`, async () => {
+      database.raw.prepare('SELECT 1').get();
+      return { status: 'ok' };
+    });
 
-  app.get(`${prefix}/health`, async () => {
-    database.raw.prepare('SELECT 1').get();
-    return { status: 'ok' };
-  });
+    if (includeOpenApi) {
+      app.get(`${prefix}/openapi.yaml`, async (_request, reply) => {
+        return reply.type('application/yaml; charset=utf-8').send(clawHiveOpenApi);
+      });
+    }
 
-  app.get(`${prefix}/openapi.yaml`, async (_request, reply) => {
-    return reply.type('application/yaml; charset=utf-8').send(clawHiveOpenApi);
-  });
+    app.post(`${prefix}/sessions`, async (request, reply) => {
+      // Attribution is a property of the entry route, never user-provided data.
+      const result = service.createSession({ ...asObject(request.body), sourcePlatform: fixedSourcePlatform });
+      return reply.status(201).send(result);
+    });
 
-  app.post(`${prefix}/sessions`, async (request, reply) => {
-    const result = service.createSession(asObject(request.body));
-    return reply.status(201).send(result);
-  });
+    app.post(`${prefix}/sessions/:id/messages`, async (request) => {
+      return service.addMessage(paramId(request), sessionToken(request), asObject(request.body), idempotencyKey(request));
+    });
 
-  app.post(`${prefix}/sessions/:id/messages`, async (request) => {
-    return service.addMessage(paramId(request), sessionToken(request), asObject(request.body), idempotencyKey(request));
-  });
+    app.post(`${prefix}/sessions/:id/attachments`, async (request) => {
+      const part = await request.file();
+      if (!part) throw new LandingServiceError('EXT-40030', '缺少上传文件', 400);
+      const buffer = await part.toBuffer();
+      return service.addAttachment(paramId(request), sessionToken(request), {
+        filename: part.filename, mimetype: part.mimetype, buffer,
+      }, idempotencyKey(request));
+    });
 
-  app.post(`${prefix}/sessions/:id/attachments`, async (request) => {
-    const part = await request.file();
-    if (!part) throw new LandingServiceError('EXT-40030', '缺少上传文件', 400);
-    const buffer = await part.toBuffer();
-    return service.addAttachment(paramId(request), sessionToken(request), {
-      filename: part.filename, mimetype: part.mimetype, buffer,
-    }, idempotencyKey(request));
-  });
+    app.post(`${prefix}/sessions/:id/generate-map`, async (request) => {
+      return service.generateMap(paramId(request), sessionToken(request), idempotencyKey(request));
+    });
 
-  app.post(`${prefix}/sessions/:id/generate-map`, async (request) => {
-    return service.generateMap(paramId(request), sessionToken(request), idempotencyKey(request));
-  });
+    app.get(`${prefix}/sessions/:id/map`, async (request) => {
+      return service.getMap(paramId(request), sessionToken(request));
+    });
 
-  app.get(`${prefix}/sessions/:id/map`, async (request) => {
-    return service.getMap(paramId(request), sessionToken(request));
-  });
+    app.post(`${prefix}/sessions/:id/consent`, async (request) => {
+      return service.saveConsent(paramId(request), sessionToken(request), asObject(request.body), idempotencyKey(request));
+    });
 
-  app.post(`${prefix}/sessions/:id/consent`, async (request) => {
-    return service.saveConsent(paramId(request), sessionToken(request), asObject(request.body), idempotencyKey(request));
-  });
+    app.post(`${prefix}/sessions/:id/convert`, async (request) => {
+      return service.convert(paramId(request), sessionToken(request), idempotencyKey(request));
+    });
 
-  app.post(`${prefix}/sessions/:id/convert`, async (request) => {
-    return service.convert(paramId(request), sessionToken(request), idempotencyKey(request));
-  });
+    app.delete(`${prefix}/sessions/:id`, async (request) => {
+      return service.deleteSession(paramId(request), sessionToken(request));
+    });
+  };
 
-  app.delete(`${prefix}/sessions/:id`, async (request) => {
-    return service.deleteSession(paramId(request), sessionToken(request));
-  });
+  registerPublicRoutes('/api/public/clawhive/v1', 'CLAWHIVE', true);
+  registerPublicRoutes('/api/public/fde-website/v1', 'FDE_WEBSITE');
 
   app.get('/api/internal/enterprise-ai-landing-guide/v1/stats', async (request) => {
     const supplied = String(request.headers['x-stats-key'] || '');

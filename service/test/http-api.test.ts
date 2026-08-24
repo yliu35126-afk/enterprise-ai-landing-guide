@@ -58,13 +58,28 @@ describe('Enterprise AI Landing Guide HTTP API', () => {
     assert.equal(body.source.sourcePlatform, 'CLAWHIVE');
   });
 
-  it('拒绝不支持的来源平台', async () => {
+  it('ClawHive入口忽略请求体来源并固定CLAWHIVE', async () => {
     const response = await app.inject({
       method: 'POST', url: `${prefix}/sessions`,
       payload: { sourcePlatform: 'UNKNOWN_VENDOR', sourceVersion: '1.0.0' },
     });
-    assert.equal(response.statusCode, 400);
-    assert.equal(response.json().code, 'EXT-40010');
+    assert.equal(response.statusCode, 201);
+    assert.equal(response.json().source.sourcePlatform, 'CLAWHIVE');
+  });
+
+  it('官网入口固定FDE_WEBSITE并支持后续会话路由', async () => {
+    const websitePrefix = '/api/public/fde-website/v1';
+    const response = await app.inject({
+      method: 'POST', url: `${websitePrefix}/sessions`,
+      payload: { sourcePlatform: 'CLAWHIVE', sourceVersion: '1.0.0', mode: 'KNOWN_PROBLEM' },
+    });
+    assert.equal(response.statusCode, 201);
+    const body = response.json();
+    assert.equal(body.source.sourcePlatform, 'FDE_WEBSITE');
+    const health = await app.inject({ method: 'GET', url: `${websitePrefix}/health` });
+    assert.equal(health.statusCode, 200);
+    const map = await app.inject({ method: 'GET', url: `${websitePrefix}/sessions/${body.sessionId}/map`, headers: { authorization: `Bearer ${body.sessionToken}` } });
+    assert.equal(map.statusCode, 404);
   });
 
   it('拒绝非语义化来源版本', async () => {

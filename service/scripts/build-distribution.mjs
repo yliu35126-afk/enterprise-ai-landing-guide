@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const serviceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const packageName = 'enterprise-ai-landing-guide';
-const releaseVersion = '1.2.2';
+const releaseVersion = '1.3.1';
 const source = resolve(serviceRoot, 'integrations/clawhive', packageName);
 const openApi = resolve(serviceRoot, 'integrations/clawhive/openapi.yaml');
 const openClawRoot = resolve(serviceRoot, 'distribution/openclaw');
