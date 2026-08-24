@@ -10,7 +10,8 @@
 
 - `SKILL.md`：Agent 行为、授权与安全边界
 - `openapi.yaml`：可导入平台的公开 API 契约
-- `scripts/fde_client.py`：零第三方依赖的 API 调用适配器
+- `scripts/fde_client.sh`：ClawHive Bash 运行时优先使用的 POSIX/curl API 调用适配器
+- `scripts/fde_client.py`：提供 Python 的其他平台保留使用的零第三方依赖适配器
 - `references/`：调用契约与输出解释
 - `examples/`：制造报价、电商售前、招投标筛选三类样例
 
@@ -31,8 +32,8 @@
 
 ```bash
 export ENTERPRISE_AI_LANDING_API_BASE=https://fde.lantuzhigou.com
-python3 scripts/fde_client.py health
-python3 scripts/fde_client.py create --platform CLAWHUB --external-session-id local-check --mode KNOWN_PROBLEM
+sh scripts/fde_client.sh health
+sh scripts/fde_client.sh create --external-session-id local-check --mode KNOWN_PROBLEM
 ```
 
 创建会话的 JSON 响应包含一次会话 Token。在当前运行上下文中设置 `ENTERPRISE_AI_LANDING_SESSION_TOKEN`，不写入文件或日志。
@@ -53,4 +54,3 @@ clawhub skill publish ./enterprise-ai-landing-guide
 ## 许可
 
 Skill 包代码以 MIT-0 许可发布。服务端和蓝图 FDE 的许可独立管理。
-

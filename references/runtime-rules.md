@@ -1,15 +1,16 @@
 ---
 name: enterprise-ai-landing-guide
 description: 用不超过6个动态问题，帮企业找到一个可在7天内验证的AI优先场景，并在用户分别授权后申请蓝图FDE人工复核。
-allowed-tools: Bash(python3:*)
-version: 1.3.1
+allowed-tools: Bash(sh:*)
+version: 1.3.2
 homepage: https://fde.lantuzhigou.com/enterprise-ai-landing-guide
 metadata:
   openclaw:
     primaryEnv: ENTERPRISE_AI_LANDING_API_BASE
     requires:
       bins:
-        - python3
+        - sh
+        - curl
       env:
         - ENTERPRISE_AI_LANDING_API_BASE
 ---
@@ -47,16 +48,18 @@ metadata:
 
 ## 命令行适配器
 
-`scripts/fde_client.py` 只使用 Python 标准库。除创建会话外，将当前会话 Token 放入进程环境变量 `ENTERPRISE_AI_LANDING_SESSION_TOKEN`，不要把 Token 放到命令行参数。
+ClawHive 优先使用 `scripts/fde_client.sh`，它只依赖 POSIX `sh`、`awk`、`sed`、`tr`、`mktemp` 与 `curl`；不要手写或拼接 `curl` 请求。除创建会话外，将当前会话 Token 放入进程环境变量 `ENTERPRISE_AI_LANDING_SESSION_TOKEN`，不要把 Token 放到命令行参数。客户端响应中的 `sessionToken` 只能保留在当前隐藏运行上下文，绝不展示给用户、写入日志、文件或摘要。
 
 ```bash
-python3 scripts/fde_client.py health
-python3 scripts/fde_client.py create --external-session-id current-chat --mode KNOWN_PROBLEM
-python3 scripts/fde_client.py message --session-id SESSION_ID --text "报价依赖两名老师傅"
-python3 scripts/fde_client.py generate --session-id SESSION_ID
+sh scripts/fde_client.sh health
+sh scripts/fde_client.sh create --external-session-id current-chat --mode KNOWN_PROBLEM
+sh scripts/fde_client.sh message --session-id SESSION_ID --text "报价依赖两名老师傅"
+sh scripts/fde_client.sh generate --session-id SESSION_ID
+# 首轮验收可在一个进程完成创建、消息、地图生成，避免跨命令丢失 Token
+sh scripts/fde_client.sh diagnose --external-session-id clawhive-check --mode KNOWN_PROBLEM --text "报价依赖两名老师傅" --test-data
 ```
 
-ClawHive 安装的来源由正式入口固定识别为 `CLAWHIVE`。未来发布到其他平台时必须新增对应渠道适配入口，不得复用或伪造 ClawHive 来源。
+`diagnose` 的消息 JSON 字段必须是 `message`（不是 `text`）。它只在大赛/产品验收操作者首条消息明确使用 `TEST_DATA` 时传 `--test-data`，该选项严格映射为 `dataClassification: "TEST_DATA"`；普通用户不传。ClawHive 客户端固定发送 `sourcePlatform: "CLAWHIVE"` 与 `sourceVersion: "1.3.2"`。Python 客户端保留给提供 Python 的其他平台；未来发布到其他平台时必须新增对应渠道适配入口，不得复用或伪造 ClawHive 来源。
 
 完整字段和错误处理见 [references/API.md](references/API.md)。三个完整业务样例见 [examples](examples)。
 

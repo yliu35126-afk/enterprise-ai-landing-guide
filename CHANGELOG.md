@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.2 - 2026-08-24
+
+- ClawHive Bash 运行时新增 POSIX `sh` + `curl` 客户端，并提供同进程 `diagnose` 首轮闭环。
+- ClawHive 客户端固定使用来源 `CLAWHIVE` 与版本 `1.3.2`；`TEST_DATA` 仅由显式 `--test-data` 传入。
+
 ## 1.3.1 - 2026-08-24
 
 - ClawHive 与蓝图官网使用各自固定入口识别来源，调用方不能自行选择或伪造来源平台。

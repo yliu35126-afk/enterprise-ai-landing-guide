@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Enterprise AI Landing Guide Public API
-  version: 1.3.1
+  version: 1.3.2
   description: >-
     企业AI落地导航公共API。匿名会话先生成地图，用户分别授权保存和联系后，
     才可请求FDE人工复核。本API不暴露FDE内部管理路由。
