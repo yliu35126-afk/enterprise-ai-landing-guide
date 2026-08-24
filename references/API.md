@@ -54,7 +54,8 @@ sh scripts/fde_client.sh generate --session-id SESSION_ID
 sh scripts/fde_client.sh map --session-id SESSION_ID
 sh scripts/fde_client.sh consent --session-id SESSION_ID --store --company "企业名称"
 sh scripts/fde_client.sh convert --session-id SESSION_ID
-sh scripts/fde_client.sh delete --session-id SESSION_ID
+sh scripts/fde_client.sh request-review --session-handle HANDLE --store --company "企业名称"
+sh scripts/fde_client.sh delete --session-handle HANDLE
 ```
 
 `diagnose` 在同一进程中执行 create → message → generate，适合首轮验收：
@@ -63,4 +64,4 @@ sh scripts/fde_client.sh delete --session-id SESSION_ID
 sh scripts/fde_client.sh diagnose --external-session-id clawhive-check --mode KNOWN_PROBLEM --text "报价依赖两名老师傅" --test-data
 ```
 
-请求消息的字段始终为 `message`；`--test-data` 仅增加 `dataClassification: "TEST_DATA"`，不改变普通会话默认的 `BUSINESS`。`diagnose` 输出可能含供隐藏续接上下文使用的 `sessionToken`，运行时必须遮蔽，不得向用户展示或持久化。
+请求消息的字段始终为 `message`；`--test-data` 仅增加 `dataClassification: "TEST_DATA"`，不改变普通会话默认的 `BUSINESS`。`diagnose` 只输出随机 `sessionHandle`、会话 ID、消息和地图；Token 存在当前用户专属临时状态文件中，有效期一小时。授权续接必须使用 `request-review --session-handle`，失败不得重跑 `diagnose`。

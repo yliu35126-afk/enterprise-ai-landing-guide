@@ -4,23 +4,25 @@
 
 set -u
 
-VERSION=1.3.2
+VERSION=1.3.3
 PREFIX=/api/public/clawhive/v1
 BASE_URL=${ENTERPRISE_AI_LANDING_API_BASE:-https://fde.lantuzhigou.com}
 TIMEOUT=35
 TMP_FILE=
+STATE_TTL=3600
 
 usage() {
   cat >&2 <<'EOF'
 Usage: fde_client.sh [--base-url URL] [--timeout SECONDS] COMMAND [OPTIONS]
-Commands: health create message generate map consent convert delete diagnose
+  Commands: health create message generate map consent convert request-review delete diagnose
 Create:   --external-session-id ID [--mode MODE] [--campaign CODE] [--referrer URL] [--entry-url URL] [--test-data]
 Message:  --session-id ID --text TEXT [--mode MODE] [--idempotency-key KEY]
 Generate: --session-id ID [--idempotency-key KEY]
 Map:      --session-id ID
 Consent:  --session-id ID [--store] [--contact] [--company NAME] [--contact-name NAME] [--mobile PHONE] [--email EMAIL] [--idempotency-key KEY]
 Convert:  --session-id ID [--idempotency-key KEY]
-Delete:   --session-id ID
+Request-review: --session-handle HANDLE --store --company NAME [--contact --contact-name NAME --mobile PHONE --email EMAIL]
+Delete:   --session-id ID | --session-handle HANDLE
 Diagnose: --external-session-id ID --text TEXT --mode MODE [--campaign CODE] [--referrer URL] [--entry-url URL] [--test-data] [--idempotency-key KEY]
 EOF
   exit 2
@@ -42,6 +44,73 @@ cleanup() {
   fi
 }
 trap cleanup 0 HUP INT TERM
+
+state_dir() {
+  dir=${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}/enterprise-ai-landing-guide
+  if [ ! -d "$dir" ]; then
+    (umask 077 && mkdir -p "$dir") || die '无法创建会话状态目录'
+  fi
+  chmod 700 "$dir" || die '无法保护会话状态目录'
+  printf '%s' "$dir"
+}
+
+valid_handle() {
+  case "$1" in
+    ''|*[!A-Za-z0-9._-]*) return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
+new_handle() {
+  random=$(od -An -N16 -tx1 /dev/urandom 2>/dev/null | tr -d ' \n')
+  [ -n "$random" ] || random=$(date +%s)-$$
+  printf 's-%s' "$random"
+}
+
+state_path() {
+  handle=$1
+  valid_handle "$handle" || die 'session-handle格式无效'
+  printf '%s/%s.state' "$(state_dir)" "$handle"
+}
+
+write_state() {
+  handle=$1
+  session_id=$2
+  token=$3
+  path=$(state_path "$handle")
+  now=$(date +%s)
+  umask 077
+  tmp_state=$(mktemp "${path}.XXXXXX") || die '无法创建会话状态'
+  chmod 600 "$tmp_state"
+  {
+    printf 'created_at=%s\n' "$now"
+    printf 'session_id=%s\n' "$session_id"
+    printf 'session_token=%s\n' "$token"
+  } >"$tmp_state" || { rm -f "$tmp_state"; die '无法写入会话状态'; }
+  mv -f "$tmp_state" "$path" || { rm -f "$tmp_state"; die '无法保存会话状态'; }
+  chmod 600 "$path"
+}
+
+state_field() {
+  path=$1
+  field=$2
+  awk -F= -v wanted="$field" '$1 == wanted {sub(/^[^=]*=/, ""); print; exit}' "$path"
+}
+
+load_state() {
+  handle=$1
+  state_path_value=$(state_path "$handle")
+  [ -f "$state_path_value" ] || die 'session-handle不存在或已完成'
+  chmod 600 "$state_path_value" 2>/dev/null || true
+  created_at=$(state_field "$state_path_value" created_at)
+  session_id=$(state_field "$state_path_value" session_id)
+  session_token=$(state_field "$state_path_value" session_token)
+  case "$created_at" in ''|*[!0-9]*) die 'session-handle状态无效' ;; esac
+  now=$(date +%s)
+  [ "$now" -ge "$created_at" ] || die 'session-handle状态无效'
+  [ $((now - created_at)) -lt "$STATE_TTL" ] || die 'session-handle已过期，请新建会话'
+  [ -n "$session_id" ] && [ -n "$session_token" ] || die 'session-handle状态不完整'
+}
 
 # Escape a shell string for use inside a JSON string. Shell variables cannot
 # contain NUL; all other JSON control characters handled by this function are
@@ -154,7 +223,7 @@ create_payload() {
   referrer=$4
   entry_url=$5
   test_data=$6
-  payload='{"sourcePlatform":"CLAWHIVE","sourceVersion":"1.3.2","externalSessionId":'
+  payload='{"sourcePlatform":"CLAWHIVE","sourceVersion":"1.3.3","externalSessionId":'
   payload=$payload$(json_string "$external_id")
   [ -n "$mode" ] && payload=$payload',"mode":'$(json_string "$mode")
   [ -n "$campaign" ] && payload=$payload',"campaignCode":'$(json_string "$campaign")
@@ -305,16 +374,67 @@ run_convert() {
   api_request POST "/sessions/$session_id/convert" '{}' "$(token_from_environment)" "$idem"
 }
 
+run_request_review() {
+  handle=
+  store=false
+  contact=false
+  company=
+  contact_name=
+  mobile=
+  email=
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --session-handle) require_value "$1" "${2:-}"; handle=$2; shift 2 ;;
+      --store) store=true; shift ;;
+      --contact) contact=true; shift ;;
+      --company) require_value "$1" "${2:-}"; company=$2; shift 2 ;;
+      --contact-name) require_value "$1" "${2:-}"; contact_name=$2; shift 2 ;;
+      --mobile) require_value "$1" "${2:-}"; mobile=$2; shift 2 ;;
+      --email) require_value "$1" "${2:-}"; email=$2; shift 2 ;;
+      *) die "request-review不支持选项$1" ;;
+    esac
+  done
+  [ -n "$handle" ] || die '缺少--session-handle'
+  [ "$store" = true ] || die 'request-review需要--store'
+  [ -n "$company" ] || die 'request-review需要--company'
+  if [ "$contact" = true ]; then
+    [ -n "$contact_name$mobile$email" ] || die '同意联系时需要联系人、手机或邮箱'
+  else
+    contact_name=
+    mobile=
+    email=
+  fi
+  load_state "$handle"
+  path=$(state_path "$handle")
+  consent_response=$(api_request POST "/sessions/$session_id/consent" "$(consent_payload "$company" "$contact_name" "$mobile" "$email" "$store" "$contact")" "$session_token" "$(new_key "$handle" consent)") || exit 1
+  convert_response=$(api_request POST "/sessions/$session_id/convert" '{}' "$session_token" "$(new_key "$handle" convert)") || exit 1
+  rm -f "$path"
+  printf '{"consent":%s,"convert":%s}\n' "$consent_response" "$convert_response"
+}
+
 run_delete() {
   session_id=
+  handle=
+  session_token=
+  path=
   while [ "$#" -gt 0 ]; do
     case "$1" in
       --session-id) require_value "$1" "${2:-}"; session_id=$2; shift 2 ;;
+      --session-handle) require_value "$1" "${2:-}"; handle=$2; shift 2 ;;
       *) die "delete不支持选项$1" ;;
     esac
   done
+  if [ -n "$handle" ]; then
+    load_state "$handle"
+    path=$(state_path "$handle")
+  fi
   [ -n "$session_id" ] || die '缺少--session-id'
-  api_request DELETE "/sessions/$session_id" '' "$(token_from_environment)"
+  if [ -n "$session_token" ]; then
+    api_request DELETE "/sessions/$session_id" '' "$session_token"
+  else
+    api_request DELETE "/sessions/$session_id" '' "$(token_from_environment)"
+  fi
+  [ -n "${path:-}" ] && rm -f "$path"
 }
 
 run_diagnose() {
@@ -348,10 +468,10 @@ run_diagnose() {
   [ -n "$session_id" ] && [ -n "$session_token" ] || die '创建会话响应缺少sessionId或sessionToken'
   message_response=$(api_request POST "/sessions/$session_id/messages" "$(message_payload "$text" "$mode")" "$session_token" "$(new_key "$base_key" message)") || exit 1
   map_response=$(api_request POST "/sessions/$session_id/generate-map" '{}' "$session_token" "$(new_key "$base_key" generate)") || exit 1
-  # The session object intentionally retains sessionToken for the calling
-  # runtime's hidden continuation context. Runtime rules forbid showing it to
-  # users or writing it to logs/files.
-  printf '{"session":%s,"message":%s,"map":%s}\n' "$create_response" "$message_response" "$map_response"
+  handle=$(new_handle)
+  write_state "$handle" "$session_id" "$session_token"
+  printf '{"sessionHandle":%s,"sessionId":%s,"message":%s,"map":%s}\n' \
+    "$(json_string "$handle")" "$(json_string "$session_id")" "$message_response" "$map_response"
 }
 
 command=
@@ -359,7 +479,7 @@ while [ "$#" -gt 0 ]; do
   case "$1" in
     --base-url) require_value "$1" "${2:-}"; BASE_URL=$2; shift 2 ;;
     --timeout) require_value "$1" "${2:-}"; TIMEOUT=$2; shift 2 ;;
-    health|create|message|generate|map|consent|convert|delete|diagnose) command=$1; shift; break ;;
+    health|create|message|generate|map|consent|convert|request-review|delete|diagnose) command=$1; shift; break ;;
     -h|--help) usage ;;
     *) usage ;;
   esac
@@ -374,6 +494,7 @@ case "$command" in
   map) run_map "$@" ;;
   consent) run_consent "$@" ;;
   convert) run_convert "$@" ;;
+  request-review) run_request_review "$@" ;;
   delete) run_delete "$@" ;;
   diagnose) run_diagnose "$@" ;;
 esac

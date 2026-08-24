@@ -2,7 +2,7 @@
 name: enterprise-ai-landing-guide
 description: 不知道AI应该先用在哪里？输入企业现状或一个具体业务问题，AI帮你找出最值得先验证的一条业务场景，并给出介入流程和7天验证方案。
 allowed-tools: Bash(sh:*)
-version: 1.3.2
+version: 1.3.3
 homepage: https://fde.lantuzhigou.com/enterprise-ai-landing-guide
 ---
 

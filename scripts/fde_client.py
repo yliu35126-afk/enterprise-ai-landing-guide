@@ -41,7 +41,7 @@ class LandingGuideClient:
         content_type: str = "application/json",
     ) -> dict[str, Any]:
         url = f"{self.base_url}{self.prefix}{path}"
-        headers = {"Accept": "application/json", "User-Agent": "enterprise-ai-landing-guide-skill/1.3.2"}
+        headers = {"Accept": "application/json", "User-Agent": "enterprise-ai-landing-guide-skill/1.3.3"}
         if token:
             headers["Authorization"] = f"Bearer {token}"
         if idempotency_key:
@@ -150,7 +150,7 @@ def parser() -> argparse.ArgumentParser:
     create = commands.add_parser("create")
     # The ClawHive adapter has one authoritative attribution; callers cannot choose it.
     create.add_argument("--platform", default="CLAWHIVE", help=argparse.SUPPRESS)
-    create.add_argument("--version", default="1.3.2")
+    create.add_argument("--version", default="1.3.3")
     create.add_argument("--external-session-id", required=True)
     create.add_argument("--mode", choices=["KNOWN_PROBLEM", "OPPORTUNITY_SCAN"])
     create.add_argument("--campaign")

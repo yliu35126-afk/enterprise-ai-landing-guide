@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.3 - 2026-08-24
+
+- ClawHive POSIX 运行时以受限一小时句柄保存会话续接状态，不再把 Token 输出到诊断结果。
+- 新增 `request-review` 单进程授权与转换续接；失败保留同阶段幂等状态，禁止重跑诊断。
+- `delete` 支持会话句柄并在成功后清理状态文件。
+
 ## 1.3.2 - 2026-08-24
 
 - ClawHive Bash 运行时新增 POSIX `sh` + `curl` 客户端，并提供同进程 `diagnose` 首轮闭环。
