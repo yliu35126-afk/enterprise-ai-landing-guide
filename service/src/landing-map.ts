@@ -115,11 +115,13 @@ export function enforceEvidencePolicy(map: LandingMap) {
   for (const field of ['day7Result', 'day30Metrics', 'stopConditions'] as const) {
     map.validationPlan[field] = (map.validationPlan[field] || []).map((claim: string) => {
       const unsupported = numericEvidenceTokens(claim).filter((token) => !supportedNumbers.has(token) && !SYSTEM_VALIDATION_PERIODS.has(token));
-      if (!unsupported.length || /待确认|建议目标/.test(claim)) return claim;
-      const suffix = '（建议目标，待确认）';
-      const labelled = `${claim.slice(0, Math.max(0, 300 - suffix.length))}${suffix}`;
-      proposedThresholds.push(labelled);
-      return labelled;
+      if (!unsupported.length) return claim;
+      const redacted = redactUnsupportedNumbers(
+        claim.replace(/（建议目标，待确认）/g, ''),
+        supportedNumbers,
+      ).slice(0, 300);
+      proposedThresholds.push(redacted);
+      return redacted;
     });
   }
   if (proposedThresholds.length) {
@@ -128,6 +130,21 @@ export function enforceEvidencePolicy(map: LandingMap) {
       ...proposedThresholds.map((item) => `验证阈值待人工确认：${item}`),
     ])).slice(0, 50);
   }
+  // 样本量、金额、比例等数字若不是用户证据，不能从模型说明中直接进入地图。
+  const redact = (value: unknown) => redactUnsupportedNumbers(String(value || ''), supportedNumbers);
+  for (const scenario of map.candidateScenarios || []) {
+    for (const field of ['currentProblem', 'aiParticipation', 'reason'] as const) scenario[field] = redact(scenario[field]);
+    scenario.humanResponsibilities = (scenario.humanResponsibilities || []).map(redact);
+    scenario.requiredData = (scenario.requiredData || []).map(redact);
+  }
+  if (map.primaryScenario) map.primaryScenario.selectionReason = redact(map.primaryScenario.selectionReason);
+  map.currentFlow = (map.currentFlow || []).map(redact);
+  map.aiEnabledFlow = (map.aiEnabledFlow || []).map((item: any) => ({ ...item, step: redact(item.step) }));
+  if (map.validationPlan) {
+    map.validationPlan.validationObject = redact(map.validationPlan.validationObject);
+    map.validationPlan.requiredMaterials = (map.validationPlan.requiredMaterials || []).map(redact);
+  }
+  if (map.budgetSource) map.budgetSource.basis = redact(map.budgetSource.basis);
   return map;
 }
 
@@ -148,6 +165,21 @@ function numericEvidenceTokens(value: string) {
     tokens.push(`${number}|${unit || 'PLAIN'}`);
   }
   return tokens;
+}
+
+function redactUnsupportedNumbers(value: string, supportedNumbers: Set<string>) {
+  const pattern = /([￥¥$])?\s*(\d+(?:\.\d+)?)\s*(万|千|百)?\s*(元|块|%|％|小时|分钟|天|次|人|份|个|条|张|项|家|月|年)?/g;
+  return value.replace(pattern, (full, currency: string, number: string, multiplier: string, rawUnit: string) => {
+    let unit = rawUnit || '';
+    if (unit === '块') unit = '元';
+    if (unit === '％') unit = '%';
+    if (currency && !unit) unit = '元';
+    const token = currency && unit === '元'
+      ? `${number}|${multiplier || ''}元`
+      : `${number}|${multiplier ? `${multiplier}${unit}` : (unit || 'PLAIN')}`;
+    if (supportedNumbers.has(token) || SYSTEM_VALIDATION_PERIODS.has(token)) return full;
+    return '企业实际量待确认';
+  });
 }
 
 export function landingMapMarkdown(map: LandingMap) {

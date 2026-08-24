@@ -94,10 +94,10 @@ describe('Skill distribution package', () => {
     for (const file of files) assert.equal(existsSync(resolve(submission, file)), true, file);
     assert.equal(readFileSync(resolve(submission, 'slug.txt'), 'utf8').trim(), packageName);
     const checklist = readFileSync(resolve(submission, 'submission-checklist.md'), 'utf8');
-    assert.match(checklist, /当前状态：作品材料已完成；等待官方报名入口/);
+    assert.match(checklist, /当前状态：.*网易比赛尚未最终提交/);
     assert.match(checklist, /\[x\] 公网 HTTPS API/);
-    assert.match(checklist, /\[x\] ClawHub v1\.0\.0 已公开上架/);
+    assert.match(checklist, /\[x\] ClawHub v1\.2\.2 已生成且安全扫描为 `clean`/);
     assert.match(checklist, /\[ \] ClawHive 平台内三套对话复演：当前企业桌面\/云端坐席均为 0/);
-    assert.match(checklist, /\[ \] 获得主办方可核验的官方报名表/);
+    assert.match(checklist, /\[ \] 获得主办方可核验的正式作品上传入口/);
   });
 });

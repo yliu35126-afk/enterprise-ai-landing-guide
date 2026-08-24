@@ -60,6 +60,7 @@ export const config = Object.freeze({
   defaultAiModel: process.env.DEFAULT_AI_MODEL?.trim() || '',
   deepseekApiUrl: process.env.DEEPSEEK_API_URL?.trim() || 'https://api.deepseek.com/v1/chat/completions',
   deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
+  conversationLlmTimeoutMs: integer('CONVERSATION_LLM_TIMEOUT_MS', 8000, 1000, 30000),
   llmTimeoutMs: integer('LLM_TIMEOUT_MS', 90000, 5000, 180000),
   testProviderEnabled: process.env.EXTERNAL_LANDING_TEST_PROVIDER === 'true' && process.env.NODE_ENV === 'test',
 });

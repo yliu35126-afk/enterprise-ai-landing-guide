@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { afterEach, beforeEach, describe, it } from 'node:test';
-import type { LandingAi } from '../src/llm.js';
+import { LandingAiError, type LandingAi } from '../src/llm.js';
 import { LandingDatabase } from '../src/db.js';
 import { ExternalLandingSessionService, LandingServiceError } from '../src/session-service.js';
 
@@ -43,6 +43,19 @@ class FakeAi implements LandingAi {
   async generateMap() {
     this.mapCount += 1;
     return structuredClone(validMap);
+  }
+}
+
+class ZeroModelAi extends FakeAi {
+  async conversationTurn(): Promise<never> {
+    throw new LandingAiError('AI_PROVIDER_NOT_CONFIGURED', 'test fallback', 503);
+  }
+}
+
+class TimeoutAi extends FakeAi {
+  async conversationTurn(): Promise<never> {
+    this.turnCount += 1;
+    throw new LandingAiError('AI_TIMEOUT', 'test timeout', 504);
   }
 }
 
@@ -136,7 +149,7 @@ describe('ExternalLandingSessionService', () => {
     assert.equal(result.map.candidateScenarios[0].currentLoss, '待确认');
     assert.deepEqual(result.map.factStatus.confirmedFacts, ['报价依赖两名老师傅，一次需要1至2小时。', '报价依赖两名老师傅']);
     assert.deepEqual(result.map.factStatus.aiInferences, ['历史订单可能可用于相似匹配']);
-    assert.match(result.map.validationPlan.stopConditions[0], /建议目标，待确认/);
+    assert.match(result.map.validationPlan.stopConditions[0], /企业实际量待确认|真实基线待确认/);
     assert.ok(result.map.factStatus.unknownItems.some((item: string) => item.includes('验证阈值待人工确认')));
     assert.match(result.markdown, /员工保留职责/);
   });
@@ -271,5 +284,76 @@ describe('ExternalLandingSessionService', () => {
     service.saveConsent(created.sessionId, created.sessionToken, { consentToStore: true, companyName: '测试企业' }, 'consent-1');
     await assert.rejects(() => service.convert(created.sessionId, created.sessionToken, 'convert-1'), LandingServiceError);
     assert.equal(db.session(created.sessionId)!.converted_opportunity_id, null);
+  });
+
+  it('零模型时确定性提取10人规模并按订单瓶颈选择下一问', async () => {
+    const zeroModelService = new ExternalLandingSessionService(db, new ZeroModelAi());
+    const created = create();
+    const result = await zeroModelService.addMessage(
+      created.sessionId,
+      created.sessionToken,
+      { mode: 'KNOWN_PROBLEM', message: '我们是10人公司，订单录入主要靠Excel。' },
+      'zero-size-1',
+    );
+    assert.equal(db.session(created.sessionId)!.company_size, '10人');
+    assert.match(result.nextQuestion || '', /订单从接收、核对到录入完成/);
+    const second = await zeroModelService.addMessage(
+      created.sessionId,
+      created.sessionToken,
+      { mode: 'KNOWN_PROBLEM', message: '收到订单后，人工核对字段，再录入表格。' },
+      'zero-size-2',
+    );
+    assert.match(second.nextQuestion || '', /订单录入大约每周或每月发生多少次/);
+    assert.equal(db.session(created.sessionId)!.conversation_state.includes('人工核对字段'), true);
+    const map = await zeroModelService.generateMap(created.sessionId, created.sessionToken, 'zero-size-map');
+    assert.equal(map.map.companyProfile.companySize, '10人');
+  });
+
+  it('零模型时按订单、制造多系统、技术服务报价分别选择下一问', async () => {
+    const cases = [
+      ['我们是10人公司，订单录入主要靠Excel。', /订单从接收、核对到录入完成/],
+      ['我们是200人制造企业，多个系统之间经常人工交接。', /涉及哪些系统、Excel或人工交接/],
+      ['我们是技术服务团队，报价准备依赖历史资料。', /客户需求进入后，到报价资料准备完成/],
+    ] as const;
+    for (const [message, expected] of cases) {
+      const zeroModelService = new ExternalLandingSessionService(db, new ZeroModelAi());
+      const created = create();
+      const result = await zeroModelService.addMessage(
+        created.sessionId,
+        created.sessionToken,
+        { mode: 'KNOWN_PROBLEM', message },
+        `zero-category-${message.slice(0, 4)}`,
+      );
+      assert.match(result.nextQuestion || '', expected);
+    }
+  });
+
+  it('已识别确定性瓶颈时直接规划下一问且不调用对话模型', async () => {
+    const deterministicAi = new FakeAi();
+    const deterministicService = new ExternalLandingSessionService(db, deterministicAi);
+    const created = create();
+    const result = await deterministicService.addMessage(
+      created.sessionId,
+      created.sessionToken,
+      { mode: 'KNOWN_PROBLEM', message: '10人公司，订单手工录入Excel。' },
+      'deterministic-no-model',
+    );
+    assert.equal(deterministicAi.turnCount, 0);
+    assert.match(result.nextQuestion || '', /订单从接收、核对到录入完成/);
+  });
+
+  it('未知场景对话模型超时时立即进入安全fallback', async () => {
+    const timeoutAi = new TimeoutAi();
+    const timeoutService = new ExternalLandingSessionService(db, timeoutAi);
+    const created = create();
+    const result = await timeoutService.addMessage(
+      created.sessionId,
+      created.sessionToken,
+      { mode: 'KNOWN_PROBLEM', message: '我们想节省一些时间，但还没想清楚先处理什么。' },
+      'unknown-timeout-fallback',
+    );
+    assert.equal(timeoutAi.turnCount, 1);
+    assert.match(result.nextQuestion || '', /目前从开始到结束/);
+    assert.equal(result.currentStage, 'COLLECTING');
   });
 });

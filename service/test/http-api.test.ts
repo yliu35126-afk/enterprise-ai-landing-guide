@@ -195,6 +195,18 @@ describe('Enterprise AI Landing Guide HTTP API', () => {
     assert.match(terms.body, /人工确认/);
   });
 
+  it('产品入口与静态资源可直接加载', async () => {
+    const page = await app.inject({ method: 'GET', url: '/enterprise-ai-landing-guide' });
+    const script = await app.inject({ method: 'GET', url: '/assets/app.js' });
+    const style = await app.inject({ method: 'GET', url: '/assets/app.css' });
+    assert.equal(page.statusCode, 200);
+    assert.match(page.body, /企业AI落地导航/);
+    assert.equal(script.statusCode, 200);
+    assert.match(String(script.headers['content-type']), /javascript/);
+    assert.equal(style.statusCode, 200);
+    assert.match(String(style.headers['content-type']), /css/);
+  });
+
   it('内部统计端点拒绝缺失或错误凭证', async () => {
     const missing = await app.inject({ method: 'GET', url: '/api/internal/enterprise-ai-landing-guide/v1/stats' });
     const wrong = await app.inject({

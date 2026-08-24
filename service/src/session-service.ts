@@ -34,7 +34,7 @@ export class ExternalLandingSessionService {
     const sourcePlatform = sanitizeText(input.sourcePlatform || 'CLAWHIVE', 50).toUpperCase();
     const platform = getPlatform(sourcePlatform);
     if (!platform) throw new LandingServiceError('EXT-40010', '来源平台不受支持或尚未启用', 400);
-    const sourceVersion = sanitizeText(input.sourceVersion || '1.2.0', 50);
+    const sourceVersion = sanitizeText(input.sourceVersion || '1.2.2', 50);
     if (!/^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$/.test(sourceVersion)) {
       throw new LandingServiceError('EXT-40011', 'sourceVersion必须使用语义化版本', 400);
     }
@@ -120,15 +120,20 @@ export class ExternalLandingSessionService {
     const aiInferences = jsonValue<string[]>(session.ai_inferences, []);
     const unknownItems = jsonValue<string[]>(session.unknown_items, []);
     const questionCount = Number(state.questionCount || 0);
+    const deterministicBottleneck = classifyBottleneck(`${message} ${JSON.stringify(state)}`);
     let turn: ConversationTurnOutput;
-    try {
-      turn = await this.ai.conversationTurn({
-        mode, questionCount, latestMessage: message, state,
-        confirmedFacts, fileEvidence, aiInferences, unknownItems,
-      });
-    } catch (error) {
-      if (!(error instanceof LandingAiError)) throw error;
+    if (deterministicBottleneck !== 'OTHER') {
       turn = this.fallbackTurn({ mode, questionCount, message, state });
+    } else {
+      try {
+        turn = await this.ai.conversationTurn({
+          mode, questionCount, latestMessage: message, state,
+          confirmedFacts, fileEvidence, aiInferences, unknownItems,
+        });
+      } catch (error) {
+        if (!(error instanceof LandingAiError)) throw error;
+        turn = this.fallbackTurn({ mode, questionCount, message, state });
+      }
     }
 
     const directGenerate = /直接生成|先生成|生成初版|不再回答/.test(message);
@@ -145,12 +150,19 @@ export class ExternalLandingSessionService {
       ? [`用户明确标记待确认：${sanitizeText(message, 450)}`]
       : [];
     const unknown = unique([...unknownItems, ...explicitUnknown, ...turn.unknownItems.map((item) => sanitizeText(item, 500))]);
-    const updates = this.safeUpdates(turn.updates);
+    // 公司规模是后续地图分流的重要事实，优先采用从用户原话中确定性提取的结果，
+    // 避免模型漏抽取“10人公司/约200人团队”导致地图退回“待确认”。
+    const updates = this.safeUpdates({
+      ...turn.updates,
+      ...extractDeterministicUpdates(message),
+    });
     const nextState = {
       ...state,
       ...updates,
       questionCount: nextQuestion ? questionCount + 1 : questionCount,
       askedFields: unique([...(Array.isArray(state.askedFields) ? state.askedFields : []), ...Object.keys(updates)]),
+      ...(nextQuestion && turn.nextQuestionField ? { lastAskedField: turn.nextQuestionField } : {}),
+      ...(deterministicBottleneck !== 'OTHER' ? { deterministicBottleneck } : {}),
     };
     const assistantMessage = sanitizeText(
       directGenerate
@@ -280,6 +292,8 @@ export class ExternalLandingSessionService {
     if (!validation.ok) throw new LandingServiceError('EXT-50220', 'AI结果未通过结构校验，请重试', 502);
 
     const map = validation.value;
+    // companySize 已由会话中的用户原话确定性提取，最终地图不得被模型返回的默认值覆盖。
+    if (session.company_size) map.companyProfile.companySize = session.company_size;
     map.factStatus = {
       confirmedFacts: jsonValue<string[]>(session.confirmed_facts, []),
       fileEvidence: jsonValue<string[]>(session.file_evidence, []),
@@ -498,9 +512,11 @@ export class ExternalLandingSessionService {
   private mapInput(session: ExternalSessionRow) {
     const messages = this.db.raw.prepare('SELECT role, content FROM external_skill_message WHERE session_id=? ORDER BY created_at ASC').all(session.id);
     const attachments = this.db.raw.prepare('SELECT display_name, parse_status, extracted_text, parse_message FROM external_skill_attachment WHERE session_id=? AND deleted_at IS NULL ORDER BY created_at ASC').all(session.id);
+    const conversationText = messages.map((item: any) => String(item.content || '')).join(' ');
     return {
       mode: session.mode,
       companyProfile: { industry: session.industry || '待确认', companySize: session.company_size || '待确认', userRole: session.user_role || '待确认', currentGoal: session.current_goal || '待确认' },
+      deterministicBottleneck: classifyBottleneck(`${session.stated_problem || ''} ${conversationText}`),
       statedProblem: session.stated_problem || '待确认',
       conversationState: jsonValue(session.conversation_state, {}),
       confirmedFacts: jsonValue(session.confirmed_facts, []),
@@ -515,30 +531,66 @@ export class ExternalLandingSessionService {
 
   private fallbackTurn(input: { mode: string; questionCount: number; message: string; state: Record<string, any> }): ConversationTurnOutput {
     const direct = /直接生成|先生成|生成初版|不再回答/.test(input.message);
-    const questions = input.mode === 'OPPORTUNITY_SCAN'
+    const deterministic = extractDeterministicUpdates(input.message);
+    const lastAskedField = typeof input.state.lastAskedField === 'string' ? input.state.lastAskedField : '';
+    const answerUpdate = !direct && lastAskedField && !deterministic[lastAskedField]
+      ? { [lastAskedField]: input.message }
+      : {};
+    const context = `${input.message} ${JSON.stringify(input.state)}`;
+    const asked = new Set([
+      ...(Array.isArray(input.state.askedFields) ? input.state.askedFields : []),
+      ...Object.keys(input.state).filter((key) => typeof input.state[key] === 'string' && input.state[key].trim()),
+      ...Object.keys(deterministic),
+      ...(lastAskedField ? [lastAskedField] : []),
+    ]);
+    const category = classifyBottleneck(context);
+    const questions = category === 'ORDER_ENTRY'
       ? [
-          ['industry', '贵公司属于什么行业，主要产品或服务是什么？'],
-          ['currentGoal', '当前最希望改善的是获客销售、报价、客服、交付、协同、回款，还是知识传承中的哪一项？'],
-          ['statedProblem', '这个区域里最明显、最频繁的问题是什么？'],
-          ['currentFlow', '这件事目前从开始到结束，员工主要经过哪几个步骤？'],
-          ['frequency', '这件事大约每月发生多少次，不清楚时可以给区间？'],
-          ['acceptanceOwner', '7天验证结果最终由哪个岗位确认是否有效？'],
+          ['currentFlow', '订单从接收、核对到录入完成，员工现在主要经过哪几个步骤？'],
+          ['frequency', '订单录入大约每周或每月发生多少次？不清楚可以回答待确认。'],
+          ['currentTools', '订单录入现在主要使用Excel、ERP、纸质单据还是其他工具？'],
+          ['acceptanceOwner', '7天验证结果由哪个岗位确认是否有效？'],
         ]
-      : [
-          ['industry', '贵公司属于什么行业，主要产品或服务是什么？'],
-          ['currentFlow', '这个问题目前从开始到结束，员工主要经过哪几个步骤？'],
-          ['frequency', '这个问题大约每月发生多少次，不清楚时可以给区间？'],
-          ['loss', '目前最容易核对的影响是耗时、错误、成本、损失还是风险？没有数字可以回答待确认。'],
-          ['currentTools', '当前会使用哪些软件、Excel、文件或业务数据？'],
-          ['acceptanceOwner', '7天验证结果最终由哪个岗位确认是否有效？'],
-        ];
-    const asked = new Set(Array.isArray(input.state.askedFields) ? input.state.askedFields : []);
+      : category === 'MANUFACTURING_SYSTEMS'
+        ? [
+            ['currentTools', '这项工作目前涉及哪些系统、Excel或人工交接环节？'],
+            ['currentFlow', '从业务触发到结果交付，跨系统和人工交接的主要步骤是什么？'],
+            ['decisionMaker', '如果只验证一个环节，哪个岗位能决定是否继续？'],
+            ['acceptanceOwner', '7天验证结果由哪个岗位确认是否有效？'],
+          ]
+        : category === 'SERVICE_QUOTE'
+          ? [
+              ['currentFlow', '客户需求进入后，到报价资料准备完成，员工现在主要经过哪几个步骤？'],
+              ['currentTools', '报价准备目前主要依赖哪些历史资料、表格或业务系统？'],
+              ['frequency', '报价准备大约每周或每月发生多少次？不清楚可以回答待确认。'],
+              ['acceptanceOwner', '7天验证结果由哪个岗位确认是否有效？'],
+            ]
+          : input.mode === 'OPPORTUNITY_SCAN'
+            ? [
+                ['industry', '贵公司属于什么行业，主要产品或服务是什么？'],
+                ['currentGoal', '当前最希望改善的是获客销售、报价、客服、交付、协同、回款，还是知识传承中的哪一项？'],
+                ['statedProblem', '这个区域里最明显、最频繁的问题是什么？'],
+                ['currentFlow', '这件事目前从开始到结束，员工主要经过哪几个步骤？'],
+                ['frequency', '这件事大约每月发生多少次？不清楚可以回答待确认。'],
+                ['acceptanceOwner', '7天验证结果由哪个岗位确认是否有效？'],
+              ]
+            : [
+                ['currentFlow', '这个问题目前从开始到结束，员工主要经过哪几个步骤？'],
+                ['frequency', '这个问题大约每月发生多少次？不清楚可以回答待确认。'],
+                ['currentTools', '当前会使用哪些软件、Excel、文件或业务数据？'],
+                ['loss', '目前最容易核对的影响是耗时、错误、成本、损失还是风险？没有数字可以回答待确认。'],
+                ['acceptanceOwner', '7天验证结果由哪个岗位确认是否有效？'],
+              ];
     const next = direct ? null : questions.find(([field]) => !asked.has(field));
     return {
       assistantMessage: direct ? '我会基于当前信息生成初版，并把信息不足处标为待确认。' : '已记录这条由你明确提供的信息。',
       extractedFacts: [input.message], aiInferences: [], unknownItems: [],
-      updates: input.state.statedProblem ? {} : { statedProblem: input.message },
-      nextQuestion: next?.[1] || null, canGenerateMap: true,
+      updates: {
+        ...deterministic,
+        ...answerUpdate,
+        ...(input.state.statedProblem ? {} : { statedProblem: input.message }),
+      },
+      nextQuestion: next?.[1] || null, nextQuestionField: next?.[0] || null, canGenerateMap: true,
       conversationSummary: input.message,
     };
   }
@@ -600,6 +652,29 @@ function nullable(value: unknown, maxLength: number) {
 
 function unique(items: string[]) {
   return Array.from(new Set(items.filter(Boolean))).slice(0, 100);
+}
+
+/** 从用户原话提取可直接落库的企业规模事实，不依赖模型。 */
+function extractDeterministicUpdates(message: string): Record<string, string> {
+  const text = sanitizeText(message, 2000);
+  const match = text.match(/(?:公司|企业|团队|员工人数|人员规模|我们)\s*(?:目前)?\s*(?:有|是)?\s*(?:约|大约|大概)?\s*(\d+(?:\s*(?:至|到|-|~)\s*\d+)?)\s*(?:名员工|位员工|人的团队|人团队|人规模|人)(?=\s*(?:公司|企业|团队|左右|上下|，|。|、|$))?/i)
+    || text.match(/(?:^|[，。；;\s])(?:约|大约|大概)?\s*(\d+(?:\s*(?:至|到|-|~)\s*\d+)?)\s*人(?=\s*(?:公司|企业|团队|左右|上下|，|。|、|$))/i);
+  if (!match) return {};
+  const size = match[1].replace(/\s+/g, '');
+  return { companySize: `${size}人` };
+}
+
+function classifyBottleneck(context: string): 'ORDER_ENTRY' | 'MANUFACTURING_SYSTEMS' | 'SERVICE_QUOTE' | 'OTHER' {
+  if (/ORDER_ENTRY/.test(context) || (/订单/i.test(context) && /录入|登记|手工|Excel|台账/i.test(context))) {
+    return 'ORDER_ENTRY';
+  }
+  if (/MANUFACTURING_SYSTEMS/.test(context) || (/制造|生产|工厂|车间|供应链/i.test(context) && /系统|ERP|MES|多套|多个|人工交接/i.test(context))) {
+    return 'MANUFACTURING_SYSTEMS';
+  }
+  if (/SERVICE_QUOTE/.test(context) || (/技术服务|技术支持|咨询服务|服务型/i.test(context) && /报价|方案|历史资料/i.test(context))) {
+    return 'SERVICE_QUOTE';
+  }
+  return 'OTHER';
 }
 
 function oneQuestion(value: unknown) {

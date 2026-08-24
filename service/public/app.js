@@ -58,7 +58,7 @@ document.querySelectorAll('[data-mode]').forEach((button) => button.addEventList
     mode = button.dataset.mode;
     const sourcePlatform='FDE_WEBSITE';
     const campaignCode = new URLSearchParams(location.search).get('campaignCode') || undefined;
-    const result = await request('/sessions', { method: 'POST', body: JSON.stringify({ mode, sourcePlatform, sourceVersion: '1.2.0', campaignCode, entryUrl: location.href, referrer: document.referrer || undefined }) });
+    const result = await request('/sessions', { method: 'POST', body: JSON.stringify({ mode, sourcePlatform, sourceVersion: '1.2.2', campaignCode, entryUrl: location.href, referrer: document.referrer || undefined }) });
     sessionId = result.sessionId;
     sessionToken = result.sessionToken;
     hide('start');
@@ -196,18 +196,37 @@ function renderMap(map) {
 }
 
 $('open-consent').addEventListener('click', () => { show('consent'); $('consent').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
-$('consent-contact').addEventListener('change', (event) => event.target.checked ? show('contact-fields') : hide('contact-fields'));
+function syncConsentChoice() {
+  const choice = document.querySelector('input[name="consent-choice"]:checked')?.value;
+  const requiresReview = choice === 'review' || choice === 'review-contact';
+  const requiresContact = choice === 'review-contact';
+  $('company-name').required = requiresReview;
+  $('contact-name').required = requiresContact;
+  $('contact-method').required = requiresContact;
+  if (requiresContact) show('contact-fields'); else hide('contact-fields');
+}
+document.querySelectorAll('input[name="consent-choice"]').forEach((input) => input.addEventListener('change', syncConsentChoice));
 
 $('consent-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   hide('consent-error');
   const button = event.currentTarget.querySelector('button[type="submit"]');
+  const choice = document.querySelector('input[name="consent-choice"]:checked')?.value;
+  const consentToStore = choice === 'review' || choice === 'review-contact';
+  const consentToContact = choice === 'review-contact';
   const contact = $('contact-method').value.trim();
   button.disabled = true;
   button.innerHTML = '<span class="button-spinner"></span> 正在提交';
-  const payload = { consentToStore: $('consent-store').checked, consentToContact: $('consent-contact').checked, companyName: $('company-name').value.trim(), contactName: $('contact-name').value.trim(), mobile: /^\+?[0-9][0-9\-\s]{5,18}$/.test(contact) ? contact : undefined, email: contact.includes('@') ? contact : undefined };
+  const payload = { consentToStore, consentToContact, companyName: $('company-name').value.trim(), contactName: $('contact-name').value.trim(), mobile: /^\+?[0-9][0-9\-\s]{5,18}$/.test(contact) ? contact : undefined, email: contact.includes('@') ? contact : undefined };
   try {
     await request(`/sessions/${sessionId}/consent`, { method: 'POST', body: JSON.stringify(payload) });
+    if (!consentToStore) {
+      hide('consent');
+      show('done');
+      setText('done-text', '已按你的选择保留在本次会话内，未申请人工复核。');
+      $('done').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     const result = await request(`/sessions/${sessionId}/convert`, { method: 'POST' });
     hide('consent');
     show('done');
@@ -218,7 +237,7 @@ $('consent-form').addEventListener('submit', async (event) => {
     show('consent-error');
   } finally {
     button.disabled = false;
-    button.innerHTML = '确认授权并提交复核 <span>→</span>';
+    button.innerHTML = '确认选择 <span>→</span>';
   }
 });
 
